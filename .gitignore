@@ -1,0 +1,11 @@
+.idea/
+.yarn/install-state.gz
+node_modules/
+
+*.tsbuildinfo
+*.js
+yarn-error.log
+
+# test files
+schema.json
+client/
