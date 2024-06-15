@@ -18,6 +18,8 @@ const prettierConfig = (prettierConfigPath &&
  * Use this function for programmatic usage of schema2typebox. The options are
  * typed and commented.
  *
+ * TODO: Do one big sweep at the end instead of each file individually? Prettier & ESLint might run faster that way
+ *
  * @returns The generated code as string
  *
  * @throws Error

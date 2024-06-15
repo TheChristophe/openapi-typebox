@@ -5,8 +5,6 @@ import type RuntimeExpression from './RuntimeExpression.js';
 /**
  * https://swagger.io/specification/#callback-object
  */
-type Callback = {
-  [key in RuntimeExpression]: PathItem | Reference;
-};
+type Callback = Record<RuntimeExpression, PathItem | Reference>;
 
 export default Callback;

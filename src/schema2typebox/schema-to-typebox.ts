@@ -33,6 +33,11 @@ import {
   type JSONSchema7TypeName,
 } from 'json-schema';
 import {
+  type AllOfSchema,
+  type AnyOfSchema,
+  type ArraySchema,
+  type ConstSchema,
+  type EnumSchema,
   isAllOfSchema,
   isAnyOfSchema,
   isArraySchema,
@@ -42,29 +47,17 @@ import {
   isNullType,
   isObjectSchema,
   isOneOfSchema,
+  isRef,
   isSchemaWithMultipleTypes,
   isUnknownSchema,
-  type AllOfSchema,
-  type AnyOfSchema,
-  type ArraySchema,
-  type ConstSchema,
-  type EnumSchema,
   type MultipleTypesSchema,
   type NotSchema,
   type ObjectSchema,
   type OneOfSchema,
-  isRef,
   type RefSchema,
 } from './schema-matchers.js';
 import MissingReferenceError from './MissingReferenceError.js';
-
-type Code = string;
-
-// TODO: better name lol
-type Entry = {
-  code: Code;
-  extraImports?: string[];
-};
+import { type Code, type Entry, joinBatch } from './helperTypes.js';
 
 /**
  * Singleton
@@ -75,6 +68,8 @@ type ObjectEntry = {
   sourceFile: string;
 };
 export const knownReferences: Record<string, ObjectEntry> = {};
+
+const options = (schemaOptions: string | undefined) => (schemaOptions ? `,${schemaOptions}` : '');
 
 /** Generates TypeBox code from a given JSON schema */
 export const schema2typebox = (jsonSchema: JSONSchema7Definition) => {
@@ -103,7 +98,8 @@ const resolveObjectReference = (schema: RefSchema): Entry => {
 
   return {
     code: name,
-    extraImports: [`import ${name} from "./${name}.js";`],
+    // TODO: resolve imports better than just using root-relative imports
+    extraImports: [`import ${name} from "../models/${name}.js";`],
   };
 };
 
@@ -154,7 +150,7 @@ export const collect = (schema: JSONSchema7Definition): Entry => {
  * Unused imports (e.g. if we don't need to create a TypeRegistry for OneOf
  * types) are stripped in a postprocessing step.
  */
-const createImportStatements = () => {
+export const createImportStatements = () => {
   return [
     'import {Kind, SchemaOptions, Static, TSchema, TUnion, Type, TypeRegistry} from "@sinclair/typebox"',
     'import { Value } from "@sinclair/typebox/value";',
@@ -176,6 +172,8 @@ export const createExportNameForSchema = (schema: JSONSchema7Definition) => {
 /**
  * Creates custom typebox code to support the JSON schema keyword 'oneOf'. Based
  * on the suggestion here: https://github.com/xddq/schema2typebox/issues/16#issuecomment-1603731886
+ *
+ * TODO: single instance of this
  */
 export const createOneOfTypeboxSupportCode = (): Code =>
   [
@@ -199,19 +197,6 @@ const addOptionalModifier = (
   propertyName: string,
   requiredProperties: JSONSchema7['required'],
 ) => (requiredProperties?.includes(propertyName) ? code : `Type.Optional(${code})`);
-
-const joinCode = (output: Entry[], joiner: string) => output.map(({ code }) => code).join(joiner);
-
-const joinImports = (output: Entry[]) =>
-  output.reduce<string[]>((acc, { extraImports }) => {
-    extraImports != null && acc.push(...extraImports);
-    return acc;
-  }, []);
-
-const joinBatch = (output: Entry[], joiner: string): Entry => ({
-  code: joinCode(output, joiner),
-  extraImports: joinImports(output),
-});
 
 export const parseObject = (schema: ObjectSchema): Entry => {
   const schemaOptions = parseSchemaOptions(schema);
@@ -242,33 +227,20 @@ export const parseObject = (schema: ObjectSchema): Entry => {
     };
   });
 
-  const code = joinCode(output, ',\n');
-
-  const schemaCode =
-    schemaOptions === undefined
-      ? `Type.Object({${code}})`
-      : `Type.Object({${code}}, ${schemaOptions})`;
-
-  const extraImports = joinImports(output);
+  const { code, extraImports } = joinBatch(output, ',\n');
 
   return {
-    code: schemaCode,
+    code: `Type.Object({${code}}${options(schemaOptions)})`,
     extraImports,
   };
 };
 
 export const parseEnum = (schema: EnumSchema): Entry => {
   const schemaOptions = parseSchemaOptions(schema);
-  const { code, extraImports } = joinBatch(
-    schema.enum.map((schema) => parseType(schema)),
-    ',',
-  );
+  const { code, extraImports } = joinBatch(schema.enum.map(parseType), ',');
 
   return {
-    code:
-      schemaOptions === undefined
-        ? `Type.Union([${code}])`
-        : `Type.Union([${code}], ${schemaOptions})`,
+    code: `Type.Union([${code}]${options(schemaOptions)})`,
     extraImports,
   };
 };
@@ -276,18 +248,13 @@ export const parseEnum = (schema: EnumSchema): Entry => {
 export const parseConst = (schema: ConstSchema): Entry => {
   const schemaOptions = parseSchemaOptions(schema);
   if (Array.isArray(schema.const)) {
-    const output = schema.const.map((schema) => {
-      return parseType(schema);
-    });
-
-    const code = joinCode(output, ',\n');
-    const extraImports = joinImports(output);
+    const { code, extraImports } = joinBatch(
+      schema.const.map((schema) => parseType(schema)),
+      '\n',
+    );
 
     return {
-      code:
-        schemaOptions === undefined
-          ? `Type.Union([${code}])`
-          : `Type.Union([${code}], ${schemaOptions})`,
+      code: `Type.Union([${code}]${options(schemaOptions)})`,
       extraImports,
     };
   }
@@ -300,17 +267,11 @@ export const parseConst = (schema: ConstSchema): Entry => {
   }
   if (typeof schema.const === 'string') {
     return {
-      code:
-        schemaOptions === undefined
-          ? `Type.Literal("${schema.const}")`
-          : `Type.Literal("${schema.const}", ${schemaOptions})`,
+      code: `Type.Literal("${schema.const}"${options(schemaOptions)})`,
     };
   }
   return {
-    code:
-      schemaOptions === undefined
-        ? `Type.Literal(${schema.const})`
-        : `Type.Literal(${schema.const}, ${schemaOptions})`,
+    code: `Type.Literal(${schema.const}${options(schemaOptions)})`,
   };
 };
 
@@ -357,16 +318,10 @@ export const parseType = (type: JSONSchema7Type): Entry => {
 
 export const parseAnyOf = (schema: AnyOfSchema): Entry => {
   const schemaOptions = parseSchemaOptions(schema);
-  const output = schema.anyOf.map((schema) => collect(schema));
-
-  const code = joinCode(output, ',\n');
-  const extraImports = joinImports(output);
+  const { code, extraImports } = joinBatch(schema.anyOf.map(collect), ',\n');
 
   return {
-    code:
-      schemaOptions === undefined
-        ? `Type.Union([${code}])`
-        : `Type.Union([${code}], ${schemaOptions})`,
+    code: `Type.Union([${code}]${options(schemaOptions)})`,
     extraImports,
   };
 };
@@ -376,10 +331,7 @@ export const parseAllOf = (schema: AllOfSchema): Entry => {
   const { code, extraImports } = joinBatch(schema.allOf.map(collect), ',\n');
 
   return {
-    code:
-      schemaOptions === undefined
-        ? `Type.Intersect([${code}])`
-        : `Type.Intersect([${code}], ${schemaOptions})`,
+    code: `Type.Intersect([${code}]${options(schemaOptions)})`,
     extraImports,
   };
 };
@@ -387,23 +339,20 @@ export const parseAllOf = (schema: AllOfSchema): Entry => {
 export const parseOneOf = (schema: OneOfSchema): Entry => {
   const schemaOptions = parseSchemaOptions(schema);
   const { code, extraImports } = joinBatch(schema.oneOf.map(collect), ',\n');
+
   return {
-    code: schemaOptions === undefined ? `OneOf([${code}])` : `OneOf([${code}], ${schemaOptions})`,
+    code: `OneOf([${code}]${options(schemaOptions)})`,
     extraImports,
   };
 };
 
 export const parseNot = (schema: NotSchema): Entry => {
   const schemaOptions = parseSchemaOptions(schema);
-
-  const output = collect(schema.not);
+  const { code, extraImports } = collect(schema.not);
 
   return {
-    code:
-      schemaOptions === undefined
-        ? `Type.Not(${output.code})`
-        : `Type.Not(${output.code}, ${schemaOptions})`,
-    extraImports: output.extraImports,
+    code: `Type.Not(${code}${options(schemaOptions)})`,
+    extraImports: extraImports,
   };
 };
 
@@ -413,10 +362,7 @@ export const parseArray = (schema: ArraySchema): Entry => {
     const { code, extraImports } = joinBatch(schema.items.map(collect), ',\n');
 
     return {
-      code:
-        schemaOptions === undefined
-          ? `Type.Array(Type.Union(${code}))`
-          : `Type.Array(Type.Union(${code}),${schemaOptions})`,
+      code: `Type.Array(Type.Union(${code})${options(schemaOptions)})`,
       extraImports,
     };
   }
@@ -424,10 +370,7 @@ export const parseArray = (schema: ArraySchema): Entry => {
   const output = schema.items ? collect(schema.items) : undefined;
   const itemsType = output ? output.code : 'Type.Unknown()';
   return {
-    code:
-      schemaOptions === undefined
-        ? `Type.Array(${itemsType})`
-        : `Type.Array(${itemsType},${schemaOptions})`,
+    code: `Type.Array(${itemsType}${options(schemaOptions)})`,
     extraImports: output?.extraImports,
   };
 };
@@ -449,19 +392,19 @@ export const parseTypeName = (type: JSONSchema7TypeName, schema: JSONSchema7 = {
     case 'number':
     case 'integer':
       return {
-        code: schemaOptions === undefined ? 'Type.Number()' : `Type.Number(${schemaOptions})`,
+        code: `Type.Number(${schemaOptions ?? ''})`,
       };
     case 'string':
       return {
-        code: schemaOptions === undefined ? 'Type.String()' : `Type.String(${schemaOptions})`,
+        code: `Type.String(${schemaOptions ?? ''})`,
       };
     case 'boolean':
       return {
-        code: schemaOptions === undefined ? 'Type.Boolean()' : `Type.Boolean(${schemaOptions})`,
+        code: `Type.Boolean(${schemaOptions ?? ''})`,
       };
     case 'null':
       return {
-        code: schemaOptions === undefined ? 'Type.Null()' : `Type.Null(${schemaOptions})`,
+        code: `Type.Null(${schemaOptions ?? ''})`,
       };
     case 'object':
       return parseObject(schema as ObjectSchema);

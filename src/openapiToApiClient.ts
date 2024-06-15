@@ -6,9 +6,11 @@ import {
   knownReferences,
   schema2typebox,
 } from './schema2typebox/schema-to-typebox.js';
-import writeSanitizedFile from './schema2typebox/writeSanitizedFile.js';
+import writeSanitizedFile from './writeSanitizedFile.js';
 import MissingReferenceError from './schema2typebox/MissingReferenceError.js';
 import path from 'node:path';
+import { OpenApiMethods } from './openapi/PathItem.js';
+import operationToFunction from './operationToFunction.js';
 
 const processComponentSchemas = async (
   schemas: Required<Required<OpenApiSpec>['components']>['schemas'],
@@ -75,6 +77,26 @@ const processComponentSchemas = async (
   }
 };
 
+const processPaths = async (paths: Required<OpenApiSpec>['paths'], outDir: string) => {
+  console.log('Mkdir', path.join(outDir, 'functions'));
+  fs.mkdir(
+    path.join(outDir, 'functions'),
+    { recursive: true },
+    (err) => err != null && console.error(err),
+  );
+
+  for (const [route, pathItem] of Object.entries(paths)) {
+    for (const method of Object.values(OpenApiMethods)) {
+      const operation = pathItem[method];
+      if (operation == null) {
+        continue;
+      }
+
+      await operationToFunction(route, method, operation, outDir);
+    }
+  }
+};
+
 const openapiToApiClient = async (specPath: string, outDir: string) => {
   // TODO: validation
   let spec: OpenApiSpec;
@@ -94,6 +116,8 @@ const openapiToApiClient = async (specPath: string, outDir: string) => {
 
   spec.components?.schemas != null &&
     (await processComponentSchemas(spec.components.schemas, outPath));
+
+  spec.paths != null && (await processPaths(spec.paths, outPath));
 };
 
 export default openapiToApiClient;
