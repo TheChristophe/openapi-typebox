@@ -83,6 +83,77 @@ const ${typeName} = Type.Object(
   };
 };
 
+export class InvalidParamError extends Error {}
+
+const substituteParams = (route: string, parameters: Parameter[]) => {
+  // TODO: this is "overly careful", but it may allow to highlight unspecified parameters ahead of time?
+  for (const param of parameters) {
+    if (!route.includes(param.name)) {
+      throw new InvalidParamError(`Parameter ${param.name} specified but wasn't found in route`);
+    }
+    route = route.replace(`{${param.name}}`, `\${${param.name}}`);
+  }
+  return route;
+};
+
+const needsSanitization = (varName: string) => {
+  switch (varName) {
+    // TODO: put the js keywords here
+    case 'private':
+      return true;
+
+    default:
+      return false;
+  }
+};
+
+const sanitize = (varName: string) => (needsSanitization(varName) ? `${varName}_` : varName);
+
+const destructureParameters = (parameters: Parameter[], requestBody?: RequestBody): string[] => {
+  const lines: string[] = [];
+  if (parameters.length > 0 || requestBody) {
+    lines.push('const {');
+    for (const parameter of parameters) {
+      if (needsSanitization(parameter.name)) {
+        lines.push(`['${parameter.name}']: ${sanitize(parameter.name)},`);
+      } else {
+        lines.push(`${parameter.name},`);
+      }
+    }
+    if (requestBody) {
+      lines.push('body,');
+    }
+    lines.push('} = parameters;');
+  }
+  return lines;
+};
+
+const buildUrl = (route: string, parameters: Parameter[]) => {
+  const lines: string[] = [];
+  if (parameters.length > 0) {
+    lines.push(
+      `const url = \`${substituteParams(
+        route,
+        parameters.filter((param) => param.in === 'path'),
+      )}\`;`,
+    );
+  } else {
+    lines.push(`const url = '${route}';`);
+  }
+  return lines;
+};
+
+function forbidReferencesInParameters(
+  parameters: (Parameter | Reference)[],
+): asserts parameters is Parameter[] {
+  parameters.forEach(refUnsupported);
+}
+function forbidReferencesInRequestBody(
+  requestBody?: RequestBody | Reference,
+): asserts requestBody is RequestBody | undefined {
+  refUnsupported(requestBody);
+}
+
 const operationToFunction = async (
   route: string,
   method: string,
@@ -94,37 +165,82 @@ const operationToFunction = async (
   const lines: string[] = [];
   const imports: string[] = [];
 
-  if (operation.parameters != null || operation.requestBody != null) {
-    if (operation.parameters) {
-      for (const param of operation.parameters) {
-        refUnsupported(param);
+  const parameters = operation.parameters ?? [];
+  const requestBody = operation.requestBody;
+  forbidReferencesInParameters(parameters);
+  forbidReferencesInRequestBody(requestBody);
 
-        switch (param.in) {
-          case 'path':
-          case 'query':
-            break;
-          case 'header':
-          case 'cookie':
-          default:
-            throw new NotImplementedError(`Unsupported parameter location ${param.in}`);
-        }
+  if (operation.parameters) {
+    for (const param of operation.parameters) {
+      refUnsupported(param);
+      if (!['path', 'query'].includes(param.in)) {
+        throw new NotImplementedError(`Unsupported parameter location ${param.in}`);
       }
     }
-    if (operation.requestBody) {
-      refUnsupported(operation.requestBody);
-    }
+  }
+  if (operation.requestBody) {
+    refUnsupported(operation.requestBody);
+  }
 
-    const parameters = operation.parameters as Parameter[] | undefined;
-    const requestBody = operation.requestBody as RequestBody | undefined;
+  const parameterTypeName = `${operationName[0].toUpperCase() + operationName.substring(1)}Parameters`;
+  const anyParams = requestBody != null || parameters.length > 0;
 
-    const parameterSection = buildParameterTypes(
-      `${operationName[0].toUpperCase() + operationName.substring(1)}Parameters`,
-      parameters,
-      requestBody,
-    );
+  if (anyParams) {
+    const parameterSection = buildParameterTypes(parameterTypeName, parameters, requestBody);
     lines.push(parameterSection.code);
     parameterSection.extraImports && imports.push(...parameterSection.extraImports);
   }
+
+  lines.push(
+    `const ${operationName} = async (${anyParams ? `parameters: ${parameterTypeName}` : ''}) => {`,
+  );
+
+  lines.push(...destructureParameters(parameters, requestBody));
+
+  lines.push(...buildUrl(route, parameters));
+
+  const queryParams = parameters.filter((param) => param.in === 'query');
+
+  lines.push('const response = fetch(');
+  if (queryParams.length > 0) {
+    // webstorm does not like escaped backticks in format strings
+    // eslint-disable-next-line no-template-curly-in-string
+    lines.push('`' + '${url}?${new URLSearchParams({');
+    for (const param of queryParams) {
+      if (needsSanitization(param.name)) {
+        lines.push(
+          `...(${sanitize(param.name)} != null && {["${param.name}"]: ${sanitize(param.name)}.toString()}),`,
+        );
+      } else {
+        lines.push(`...(${param.name} != null && {${param.name}: ${param.name}.toString()}),`);
+      }
+    }
+    lines.push('}).toString()}`,');
+  } else {
+    lines.push('url,');
+  }
+  lines.push(`{
+      method: '${method.toUpperCase()}',`);
+
+  if (requestBody) {
+    // TODO: non-json
+    // TODO: how to handle multiple different request types?
+    lines.push(`
+    body: JSON.stringify(body),
+      `);
+  }
+
+  // TODO: headers
+
+  lines.push(`
+    });
+    `);
+
+  lines.push('return (await (await response).json());');
+
+  lines.push('};');
+
+  lines.push(`export default ${operationName};`);
 
   await writeSanitizedFile(
     `${outDir}/functions/${operationName}.ts`,

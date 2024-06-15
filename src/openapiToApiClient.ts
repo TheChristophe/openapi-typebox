@@ -23,7 +23,7 @@ const processComponentSchemas = async (
     (err) => err != null && console.error(err),
   );
 
-  // TODO: build a tree instead
+  // TODO: build a tree instead, could then be parallelized
   const openSet = [...Object.entries(schemas)];
   for (const [key, schema] of openSet) {
     schema['title'] ??= key;

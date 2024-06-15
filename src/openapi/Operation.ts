@@ -38,7 +38,7 @@ type Operation = {
   /**
    * The request body applicable for this operation. The requestBody is fully supported in HTTP methods where the HTTP 1.1 specification [RFC7231](https://tools.ietf.org/html/rfc7231#section-4.3.1) has explicitly defined semantics for request bodies. In other cases where the HTTP spec is vague (such as [GET](https://tools.ietf.org/html/rfc7231#section-4.3.1), [HEAD](https://tools.ietf.org/html/rfc7231#section-4.3.2) and [DELETE](https://tools.ietf.org/html/rfc7231#section-4.3.5)), requestBody is permitted but does not have well-defined semantics and SHOULD be avoided if possible.
    */
-  requestBody?: Array<RequestBody | Reference>;
+  requestBody?: RequestBody | Reference;
   /**
    * The list of possible responses as they are returned from executing this operation.
    */
