@@ -1,5 +1,6 @@
 import type Header from './Header.js';
 import type Reference from './Reference.js';
+import type PRecord from './PRecord.js';
 
 /**
  * https://swagger.io/specification/#encoding-object
@@ -12,7 +13,7 @@ type Encoding = {
   /**
    * A map allowing additional information to be provided as headers, for example Content-Disposition. Content-Type is described separately and SHALL be ignored in this section. This property SHALL be ignored if the request body media type is not a multipart.
    */
-  headers?: Record<string, Header | Reference>;
+  headers?: PRecord<string, Header | Reference>;
   /**
    * Describes how a specific property value will be serialized depending on its type. See [Parameter Object](https://swagger.io/specification/#parameter-object) for details on the [style](https://swagger.io/specification/#parameter-style) property. The behavior follows the same values as query parameters, including default values. This property SHALL be ignored if the request body media type is not application/x-www-form-urlencoded or multipart/form-data. If a value is explicitly defined, then the value of [contentType](https://swagger.io/specification/#encoding-content-type) (implicit or explicit) SHALL be ignored.
    */

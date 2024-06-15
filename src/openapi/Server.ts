@@ -1,3 +1,5 @@
+import type PRecord from './PRecord.js';
+
 /**
  * https://swagger.io/specification/#server-object
  */
@@ -13,7 +15,7 @@ type Server = {
   /**
    * A map between a variable name and its value. The value is used for substitution in the server's URL template.
    */
-  variables?: Record<
+  variables?: PRecord<
     string,
     {
       /**

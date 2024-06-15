@@ -2,6 +2,7 @@ import type JsonSchema from './JsonSchema.js';
 import type Example from './Example.js';
 import type Reference from './Reference.js';
 import type MediaType from './MediaType.js';
+import type PRecord from './PRecord.js';
 
 /**
  * https://swagger.io/specification/#parameter-object
@@ -60,11 +61,11 @@ type Parameter = {
   /**
    * Examples of the parameter's potential value. Each example SHOULD contain a value in the correct format as specified in the parameter encoding. The examples field is mutually exclusive of the example field. Furthermore, if referencing a schema that contains an example, the examples value SHALL override the example provided by the schema.
    */
-  examples?: Record<string, Example | Reference>;
+  examples?: PRecord<string, Example | Reference>;
   /**
    * A map containing the representations for the parameter. The key is the media type and the value describes it. The map MUST only contain one entry.
    */
-  content?: Record<string, MediaType>;
+  content?: PRecord<string, MediaType>;
 };
 
 export default Parameter;

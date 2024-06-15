@@ -6,6 +6,7 @@ import type RequestBody from './RequestBody.js';
 import type Responses from './Responses.js';
 import type SecurityRequirements from './SecurityRequirements.js';
 import type Server from './Server.js';
+import type PRecord from './PRecord.js';
 
 /**
  * https://swagger.io/specification/#operation-object
@@ -46,7 +47,7 @@ type Operation = {
   /**
    * A map of possible out-of band callbacks related to the parent operation. The key is a unique identifier for the Callback Object. Each value in the map is a Callback Object that describes a request that may be initiated by the API provider and the expected responses.
    */
-  callbacks?: Record<string, Callback>;
+  callbacks?: PRecord<string, Callback>;
   /**
    * Declares this operation to be deprecated. Consumers SHOULD refrain from usage of the declared operation. Default value is false.
    */

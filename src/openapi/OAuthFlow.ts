@@ -1,3 +1,5 @@
+import type PRecord from './PRecord.js';
+
 type OAuthFlow = {
   /**
    * The authorization URL to be used for this flow. This MUST be in the form of a URL. The OAuth2 standard requires the use of TLS.
@@ -14,7 +16,7 @@ type OAuthFlow = {
   /**
    * The available scopes for the OAuth2 security scheme. A map between the scope name and a short description for it. The map MAY be empty.
    */
-  scopes: Record<string, string>;
+  scopes: PRecord<string, string>;
 };
 
 export default OAuthFlow;

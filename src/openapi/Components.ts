@@ -9,6 +9,7 @@ import type SecurityScheme from './SecurityScheme.js';
 import type Link from './Link.js';
 import type Callback from './Callback.js';
 import type PathItem from './PathItem.js';
+import type PRecord from './PRecord.js';
 
 /**
  * https://swagger.io/specification/#operation-object
@@ -17,43 +18,43 @@ type Components = {
   /**
    * An object to hold reusable [Schema Objects](https://swagger.io/specification/#schema-object).
    */
-  schemas?: Record<string, JsonSchema>;
+  schemas?: PRecord<string, JsonSchema>;
   /**
    * An object to hold reusable [Response Objects](https://swagger.io/specification/#response-object).
    */
-  responses?: Record<string, Response | Reference>;
+  responses?: PRecord<string, Response | Reference>;
   /**
    * An object to hold reusable [Parameter Objects](https://swagger.io/specification/#parameter-object).
    */
-  parameters?: Record<string, Parameter | Reference>;
+  parameters?: PRecord<string, Parameter | Reference>;
   /**
    * An object to hold reusable [Example Objects](https://swagger.io/specification/#example-object).
    */
-  examples?: Record<string, Example | Reference>;
+  examples?: PRecord<string, Example | Reference>;
   /**
    * An object to hold reusable [Request Body Objects](https://swagger.io/specification/#request-body-object).
    */
-  requestBodies?: Record<string, RequestBody | Reference>;
+  requestBodies?: PRecord<string, RequestBody | Reference>;
   /**
    * An object to hold reusable [Header Objects](https://swagger.io/specification/#header-object).
    */
-  headers?: Record<string, Header | Reference>;
+  headers?: PRecord<string, Header | Reference>;
   /**
    * An object to hold reusable [Security Scheme Objects](https://swagger.io/specification/#security-scheme-object).
    */
-  securitySchemes?: Record<string, SecurityScheme>;
+  securitySchemes?: PRecord<string, SecurityScheme>;
   /**
    * An object to hold reusable [Link Objects](https://swagger.io/specification/#link-object).
    */
-  links?: Record<string, Link | Reference>;
+  links?: PRecord<string, Link | Reference>;
   /**
    * An object to hold reusable [Callback Objects](https://swagger.io/specification/#callback-object).
    */
-  callbacks?: Record<string, Callback | Reference>;
+  callbacks?: PRecord<string, Callback | Reference>;
   /**
    * An object to hold reusable Path Item Object.
    */
-  pathItems?: Record<string, PathItem>;
+  pathItems?: PRecord<string, PathItem>;
 };
 
 export default Components;

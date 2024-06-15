@@ -1,5 +1,6 @@
 import type RuntimeExpression from './RuntimeExpression.js';
 import type Server from './Server.js';
+import type PRecord from './PRecord.js';
 
 /**
  * https://swagger.io/specification/#link-object
@@ -22,7 +23,7 @@ type Link = (
    * A map representing parameters to pass to an operation as specified with operationId or identified via operationRef. The key is the parameter name to be used, whereas the value can be a constant or an expression to be evaluated and passed to the linked operation. The parameter name can be qualified using the parameter location [{in}.]{name} for operations that use the same parameter name in different locations (e.g. path.id).
    */
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-  parameters?: Record<string, unknown | RuntimeExpression>;
+  parameters?: PRecord<string, unknown | RuntimeExpression>;
   /**
    * A literal value or [{expression}](https://swagger.io/specification/#runtime-expressions) to use as a request body when calling the target operation.
    */

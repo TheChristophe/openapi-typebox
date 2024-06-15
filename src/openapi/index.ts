@@ -7,6 +7,7 @@ import type Reference from './Reference.js';
 import type SecurityRequirements from './SecurityRequirements.js';
 import type Server from './Server.js';
 import type Tag from './Tag.js';
+import type PRecord from './PRecord.js';
 
 type OpenApiSpecification = {
   // TODO: explicit versions
@@ -34,7 +35,7 @@ type OpenApiSpecification = {
   /**
    * The incoming webhooks that MAY be received as part of this API and that the API consumer MAY choose to implement. Closely related to the callbacks feature, this section describes requests initiated other than by an API call, for example by an out of band registration. The key name is a unique string to refer to each webhook, while the (optionally referenced) Path Item Object describes a request that may be initiated by the API provider and the expected responses. An [example](https://github.com/-o-a-i/-open-a-p-i--specification/blob/main/examples/v3.1/webhook-example.yaml) is available.
    */
-  webhooks?: Record<string, PathItem | Reference>;
+  webhooks?: PRecord<string, PathItem | Reference>;
   /**
    * An element to hold various schemas for the document.
    */

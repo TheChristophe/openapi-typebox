@@ -2,6 +2,7 @@ import type Encoding from './Encoding.js';
 import type Example from './Example.js';
 import type JsonSchema from './JsonSchema.js';
 import type Reference from './Reference.js';
+import type PRecord from './PRecord.js';
 
 /**
  * https://swagger.io/specification/#media-type-object
@@ -18,11 +19,11 @@ type MediaType = {
   /**
    * Examples of the media type. Each example object SHOULD match the media type and specified schema if present. The examples field is mutually exclusive of the example field. Furthermore, if referencing a schema which contains an example, the examples value SHALL override the example provided by the schema.
    */
-  examples?: Record<string, Example | Reference>;
+  examples?: PRecord<string, Example | Reference>;
   /**
    * A map between a property name and its encoding information. The key, being the property name, MUST exist in the schema as a property. The encoding object SHALL only apply to requestBody objects when the media type is multipart or application/x-www-form-urlencoded.
    */
-  encoding?: Record<string, Encoding>;
+  encoding?: PRecord<string, Encoding>;
 };
 
 export default MediaType;
