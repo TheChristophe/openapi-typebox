@@ -8,4 +8,5 @@ yarn-error.log
 
 # test files
 schema.json
+schema.yaml
 client/

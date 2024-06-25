@@ -57,23 +57,28 @@ import {
   type RefSchema,
 } from './schema-matchers.js';
 import MissingReferenceError from './MissingReferenceError.js';
-import { type Code, type Entry, joinBatch } from './helperTypes.js';
+import { type CodegenSlice, joinBatch } from './joinBatch.js';
+import { lookupReference } from '../referenceDictionary.js';
+import createTypeboxImportStatements from './createTypeboxImportStatements.js';
 
-/**
- * Singleton
- * TODO: refactor
- */
-type ObjectEntry = {
-  name: string;
-  sourceFile: string;
+const sanitize = (name: string) => {
+  switch (name) {
+    // type names that should be avoided
+    case 'Error':
+      return 'APIErrorModel';
+  }
+
+  // TODO: this is a limited subset of actually valid characters
+  if (!name[0].match(/[A-Za-z_$]/)) {
+    return `API${name}`;
+  }
+  return name;
 };
-export const knownReferences: Record<string, ObjectEntry> = {};
-
 const options = (schemaOptions: string | undefined) => (schemaOptions ? `,${schemaOptions}` : '');
 
 /** Generates TypeBox code from a given JSON schema */
-export const schema2typebox = (jsonSchema: JSONSchema7Definition) => {
-  const exportedName = createExportNameForSchema(jsonSchema);
+export const schema2typebox = (jsonSchema: JSONSchema7Definition, name?: string) => {
+  const exportedName = sanitize(name ?? createExportNameForSchema(jsonSchema));
   // Ensuring that generated typebox code will contain an '$id' field.
   // see: https://github.com/xddq/schema2typebox/issues/32
   if (typeof jsonSchema !== 'boolean' && jsonSchema.$id === undefined) {
@@ -82,24 +87,26 @@ export const schema2typebox = (jsonSchema: JSONSchema7Definition) => {
   const schema = collect(jsonSchema);
   const exportedType = createExportedTypeForName(exportedName);
 
-  return `${createImportStatements()}
+  return `${createTypeboxImportStatements()}
 ${schema.extraImports?.join('\n') ?? ''}
 ${schema.code.includes('OneOf([') ? createOneOfTypeboxSupportCode() : ''}
 ${exportedType}
-export const ${exportedName} = ${schema.code}`;
+export const ${exportedName} = ${schema.code};
+
+export default ${exportedName};`;
 };
 
-const resolveObjectReference = (schema: RefSchema): Entry => {
-  const name = createExportNameForSchema(schema);
+const resolveObjectReference = (schema: RefSchema): CodegenSlice => {
+  const entry = lookupReference(schema['$ref']);
 
-  if (!(name in knownReferences)) {
-    throw new MissingReferenceError(name);
+  if (entry == null) {
+    throw new MissingReferenceError(schema['$ref']);
   }
 
   return {
-    code: name,
+    code: entry.name,
     // TODO: resolve imports better than just using root-relative imports
-    extraImports: [`import ${name} from "../models/${name}.js";`],
+    extraImports: [`import ${entry.name} from "../models/${entry.name}.js";`],
   };
 };
 
@@ -109,7 +116,7 @@ const resolveObjectReference = (schema: RefSchema): Entry => {
  *
  * @throws Error if an unexpected schema (one with no matching parser) was given
  */
-export const collect = (schema: JSONSchema7Definition): Entry => {
+export const collect = (schema: JSONSchema7Definition): CodegenSlice => {
   if (isBoolean(schema)) {
     return { code: JSON.stringify(schema) };
   } else if (isRef(schema)) {
@@ -145,27 +152,12 @@ export const collect = (schema: JSONSchema7Definition): Entry => {
   );
 };
 
-/**
- * Creates the imports required to build the typebox code.
- * Unused imports (e.g. if we don't need to create a TypeRegistry for OneOf
- * types) are stripped in a postprocessing step.
- */
-export const createImportStatements = () => {
-  return [
-    'import {Kind, SchemaOptions, Static, TSchema, TUnion, Type, TypeRegistry} from "@sinclair/typebox"',
-    'import { Value } from "@sinclair/typebox/value";',
-  ].join('\n');
-};
-
 export const createExportNameForSchema = (schema: JSONSchema7Definition) => {
   if (isBoolean(schema)) {
     return 'T';
   }
 
-  if (isRef(schema)) {
-    return schema['$ref'].substring(schema['$ref'].lastIndexOf('/') + 1);
-  }
-
+  // TODO: title which may have spaces, handle how?
   return schema['title'] ?? 'T';
 };
 
@@ -175,11 +167,11 @@ export const createExportNameForSchema = (schema: JSONSchema7Definition) => {
  *
  * TODO: single instance of this
  */
-export const createOneOfTypeboxSupportCode = (): Code =>
+export const createOneOfTypeboxSupportCode = (): string =>
   [
-    "TypeRegistry.Set('ExtendedOneOf', (schema: any, value) => 1 === schema.oneOf.reduce((acc: number, schema: any) => acc + (Value.Check(schema, value) ? 1 : 0), 0))",
-    "const OneOf = <T extends TSchema[]>(oneOf: [...T], options: SchemaOptions = {}) => Type.Unsafe<Static<TUnion<T>>>({ ...options, [Kind]: 'ExtendedOneOf', oneOf })",
-  ].reduce((acc, curr) => `${acc + curr}\n\n`, '');
+    "TypeRegistry.Set('ExtendedOneOf', (schema: any, value) => 1 === schema.oneOf.reduce((acc: number, schema: any) => acc + (Value.Check(schema, value) ? 1 : 0), 0));",
+    "const OneOf = <T extends TSchema[]>(oneOf: [...T], options: SchemaOptions = {}) => Type.Unsafe<Static<TUnion<T>>>({ ...options, [Kind]: 'ExtendedOneOf', oneOf });",
+  ].join('\n');
 
 /**
  * @throws Error
@@ -193,12 +185,12 @@ const createExportedTypeForName = (exportedName: string) => {
 };
 
 const addOptionalModifier = (
-  code: Code,
+  code: string,
   propertyName: string,
   requiredProperties: JSONSchema7['required'],
 ) => (requiredProperties?.includes(propertyName) ? code : `Type.Optional(${code})`);
 
-export const parseObject = (schema: ObjectSchema): Entry => {
+export const parseObject = (schema: ObjectSchema): CodegenSlice => {
   const schemaOptions = parseSchemaOptions(schema);
   const properties = schema.properties;
   const requiredProperties = schema.required;
@@ -214,7 +206,7 @@ export const parseObject = (schema: ObjectSchema): Entry => {
   // [here](https://github.com/xddq/schema2typebox/discussions/35). Since we run
   // prettier as "postprocessor" anyway we will also ensure to still have a sane
   // output without any unnecessarily quotes attributes.
-  const output: Entry[] = attributes.map(([propertyName, schema]) => {
+  const output: CodegenSlice[] = attributes.map(([propertyName, schema]) => {
     const parsed = collect(schema);
 
     return {
@@ -235,7 +227,7 @@ export const parseObject = (schema: ObjectSchema): Entry => {
   };
 };
 
-export const parseEnum = (schema: EnumSchema): Entry => {
+export const parseEnum = (schema: EnumSchema): CodegenSlice => {
   const schemaOptions = parseSchemaOptions(schema);
   const { code, extraImports } = joinBatch(schema.enum.map(parseType), ',');
 
@@ -245,7 +237,7 @@ export const parseEnum = (schema: EnumSchema): Entry => {
   };
 };
 
-export const parseConst = (schema: ConstSchema): Entry => {
+export const parseConst = (schema: ConstSchema): CodegenSlice => {
   const schemaOptions = parseSchemaOptions(schema);
   if (Array.isArray(schema.const)) {
     const { code, extraImports } = joinBatch(
@@ -275,11 +267,11 @@ export const parseConst = (schema: ConstSchema): Entry => {
   };
 };
 
-export const parseUnknown = (/*_: UnknownSchema*/): Entry => ({
+export const parseUnknown = (/*_: UnknownSchema*/): CodegenSlice => ({
   code: 'Type.Unknown()',
 });
 
-export const parseType = (type: JSONSchema7Type): Entry => {
+export const parseType = (type: JSONSchema7Type): CodegenSlice => {
   if (isString(type)) {
     return {
       code: `Type.Literal("${type}")`,
@@ -316,7 +308,7 @@ export const parseType = (type: JSONSchema7Type): Entry => {
   };
 };
 
-export const parseAnyOf = (schema: AnyOfSchema): Entry => {
+export const parseAnyOf = (schema: AnyOfSchema): CodegenSlice => {
   const schemaOptions = parseSchemaOptions(schema);
   const { code, extraImports } = joinBatch(schema.anyOf.map(collect), ',\n');
 
@@ -326,7 +318,7 @@ export const parseAnyOf = (schema: AnyOfSchema): Entry => {
   };
 };
 
-export const parseAllOf = (schema: AllOfSchema): Entry => {
+export const parseAllOf = (schema: AllOfSchema): CodegenSlice => {
   const schemaOptions = parseSchemaOptions(schema);
   const { code, extraImports } = joinBatch(schema.allOf.map(collect), ',\n');
 
@@ -336,7 +328,7 @@ export const parseAllOf = (schema: AllOfSchema): Entry => {
   };
 };
 
-export const parseOneOf = (schema: OneOfSchema): Entry => {
+export const parseOneOf = (schema: OneOfSchema): CodegenSlice => {
   const schemaOptions = parseSchemaOptions(schema);
   const { code, extraImports } = joinBatch(schema.oneOf.map(collect), ',\n');
 
@@ -346,7 +338,7 @@ export const parseOneOf = (schema: OneOfSchema): Entry => {
   };
 };
 
-export const parseNot = (schema: NotSchema): Entry => {
+export const parseNot = (schema: NotSchema): CodegenSlice => {
   const schemaOptions = parseSchemaOptions(schema);
   const { code, extraImports } = collect(schema.not);
 
@@ -356,7 +348,7 @@ export const parseNot = (schema: NotSchema): Entry => {
   };
 };
 
-export const parseArray = (schema: ArraySchema): Entry => {
+export const parseArray = (schema: ArraySchema): CodegenSlice => {
   const schemaOptions = parseSchemaOptions(schema);
   if (Array.isArray(schema.items)) {
     const { code, extraImports } = joinBatch(schema.items.map(collect), ',\n');
@@ -375,7 +367,7 @@ export const parseArray = (schema: ArraySchema): Entry => {
   };
 };
 
-export const parseWithMultipleTypes = (schema: MultipleTypesSchema): Entry => {
+export const parseWithMultipleTypes = (schema: MultipleTypesSchema): CodegenSlice => {
   const { code, extraImports } = joinBatch(
     schema.type.map((typeName) => parseTypeName(typeName, schema)),
     ',\n',
@@ -386,7 +378,10 @@ export const parseWithMultipleTypes = (schema: MultipleTypesSchema): Entry => {
   };
 };
 
-export const parseTypeName = (type: JSONSchema7TypeName, schema: JSONSchema7 = {}): Entry => {
+export const parseTypeName = (
+  type: JSONSchema7TypeName,
+  schema: JSONSchema7 = {},
+): CodegenSlice => {
   const schemaOptions = parseSchemaOptions(schema);
   switch (type) {
     case 'number':
@@ -413,7 +408,7 @@ export const parseTypeName = (type: JSONSchema7TypeName, schema: JSONSchema7 = {
   }
 };
 
-const parseSchemaOptions = (schema: JSONSchema7): Code | undefined => {
+const parseSchemaOptions = (schema: JSONSchema7): string | undefined => {
   const properties = Object.entries(schema).filter(
     ([key]) =>
       // NOTE: To be fair, not sure if we should filter out the title. If this

@@ -1,16 +1,14 @@
 import fs from 'node:fs';
 import YAML from 'yaml';
 import type OpenApiSpec from './openapi/index.js';
-import {
-  createExportNameForSchema,
-  knownReferences,
-  schema2typebox,
-} from './schema2typebox/schema-to-typebox.js';
+import { schema2typebox } from './schema2typebox/index.js';
 import writeSanitizedFile from './writeSanitizedFile.js';
 import MissingReferenceError from './schema2typebox/MissingReferenceError.js';
 import path from 'node:path';
 import { OpenApiMethods } from './openapi/PathItem.js';
-import operationToFunction from './operationToFunction.js';
+import operationToFunction from './operationToFunction/index.js';
+import type JsonSchema from './openapi/JsonSchema.js';
+import { addReference, knownReferences } from './referenceDictionary.js';
 
 const processComponentSchemas = async (
   schemas: Required<Required<OpenApiSpec>['components']>['schemas'],
@@ -24,7 +22,8 @@ const processComponentSchemas = async (
   );
 
   // TODO: build a tree instead, could then be parallelized
-  const openSet = [...Object.entries(schemas)];
+  // TODO: type assertion
+  const openSet: [string, JsonSchema][] = [...Object.entries(schemas)] as [string, JsonSchema][];
   for (const [key, schema] of openSet) {
     schema['title'] ??= key;
   }
@@ -38,17 +37,12 @@ const processComponentSchemas = async (
       const [key, schema] = openSet[i];
       try {
         const destFile = `${outDir}/models/${key}.ts`;
-        await writeSanitizedFile(
-          destFile,
-          // TODO: why as string needed
-          `${schema2typebox(schema)}\nexport default ${schema['title'] as string};`,
-        );
+        await writeSanitizedFile(destFile, schema2typebox(schema, key));
 
-        const SchemaName = createExportNameForSchema(schema);
-        knownReferences[SchemaName] = {
-          name: SchemaName,
+        addReference(`#/components/schemas/${key}`, {
+          name: key,
           sourceFile: destFile,
-        };
+        });
         progressed = true;
 
         // remove processed item
@@ -72,6 +66,7 @@ const processComponentSchemas = async (
       for (const e of errors) {
         console.error(e.message);
       }
+      console.log(knownReferences);
       process.exit(1);
     }
   }
