@@ -1,8 +1,8 @@
 {
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "start-json": "node ./src/help.js ./schema.json",
-    "start-yaml": "node ./src/help.js ./schema.yaml"
+    "start-json": "node ./src/cli.js ./schema.json",
+    "start-yaml": "node ./src/cli.js ./schema.yaml"
   },
   "packageManager": "yarn@4.3.0",
   "devDependencies": {

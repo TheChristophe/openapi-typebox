@@ -8,7 +8,7 @@ const cli = meow(
     $ openapi-box <input>
 
   Options
-    --output, -o Output filename, default to "schema.js"
+    --output, -o Output folder, default to "./client"
 
   Examples
     $ openapi-box ./openapi.json
