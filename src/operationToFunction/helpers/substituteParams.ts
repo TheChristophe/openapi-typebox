@@ -7,7 +7,7 @@ const substituteParams = (route: string, parameters: Parameter[]) => {
     if (!route.includes(param.name)) {
       throw new InvalidParamError(`Parameter ${param.name} specified but wasn't found in route`);
     }
-    route = route.replace(`{${param.name}}`, `\${${param.name}}`);
+    route = route.replace(`{${param.name}}`, `\${${param.name}.toString()}`);
   }
   return route;
 };

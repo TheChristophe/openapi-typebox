@@ -35,12 +35,12 @@ const writeSanitizedFile = async (filename: string, input: string) => {
   );
 
   const lintedOutput = await eslint.lintFiles(filename);
-  const lintedFile = lintedOutput[0].output;
-  if (!lintedFile) {
+  if (lintedOutput[0].errorCount !== 0) {
     console.error('Error while linting file');
     console.warn(lintedOutput[0]);
     process.exit(1);
   }
+  const lintedFile = lintedOutput[0].output ?? fs.readFileSync(filename, 'utf-8');
 
   const formattedResult = await prettier.format(lintedFile, {
     parser: 'typescript',

@@ -28,6 +28,11 @@ const processComponentSchemas = async (
     schema['title'] ??= key;
   }
 
+  await writeSanitizedFile(
+    `${outDir}/models/_oneOf.ts`,
+    fs.readFileSync(import.meta.resolve('./clientLib/_oneOf.ts').replace('file:///', ''), 'utf-8'),
+  );
+
   while (openSet.length > 0) {
     let progressed = false;
     const errors: Error[] = [];
@@ -80,6 +85,16 @@ const processPaths = async (paths: Required<OpenApiSpec>['paths'], outDir: strin
     (err) => err != null && console.error(err),
   );
 
+  await writeSanitizedFile(
+    `${outDir}/ClientConfig.ts`,
+    fs.readFileSync(
+      import.meta.resolve('./clientLib/ClientConfig.ts').replace('file:///', ''),
+      'utf-8',
+    ),
+  );
+
+  const functions: Awaited<ReturnType<typeof operationToFunction>>[] = [];
+
   for (const [route, pathItem] of Object.entries(paths)) {
     for (const method of Object.values(OpenApiMethods)) {
       const operation = pathItem[method];
@@ -87,9 +102,46 @@ const processPaths = async (paths: Required<OpenApiSpec>['paths'], outDir: strin
         continue;
       }
 
-      await operationToFunction(route, method, operation, outDir);
+      functions.push(await operationToFunction(route, method, operation, outDir));
     }
   }
+
+  await buildClient(functions, outDir);
+};
+
+const buildClient = async (
+  functions: Awaited<ReturnType<typeof operationToFunction>>[],
+  outDir: string,
+) => {
+  const lines: string[] = [];
+  lines.push("import type ClientConfig from './ClientConfig.js';");
+  lines.push("import { mergeConfigs } from './ClientConfig.js';");
+  for (const { operationName, importPath } of functions) {
+    lines.push(`import ${operationName} from '${importPath}';`);
+  }
+  lines.push('');
+
+  lines.push(`const buildClient = (baseConfig?: ClientConfig) => {
+  if (baseConfig == null) {
+    return ({ ${functions.map(({ operationName }) => operationName).join(', ')} });
+  }
+  
+  return ({`);
+  for (const { operationName, hasParams } of functions) {
+    if (hasParams) {
+      lines.push(
+        `${operationName}: (params: Parameters<typeof ${operationName}>[0], config?: ClientConfig) => ${operationName}(params, mergeConfigs(baseConfig, config)),`,
+      );
+    } else {
+      lines.push(
+        `${operationName}: (config?: ClientConfig) => ${operationName}(mergeConfigs(baseConfig, config)),`,
+      );
+    }
+  }
+  lines.push(`  });
+};`);
+
+  await writeSanitizedFile(`${outDir}/client.ts`, lines.join('\n'));
 };
 
 const openapiToApiClient = async (specPath: string, outDir: string) => {

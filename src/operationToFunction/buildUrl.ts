@@ -11,7 +11,8 @@ const buildUrl = (route: string, parameters: Parameter[]) => {
       )}\`;`,
     );
   } else {
-    lines.push(`const url = '${route}';`);
+    // eslint-disable-next-line no-template-curly-in-string
+    lines.push(`const url = \`\${config?.basePath ?? ''}${route}\`;`);
   }
   return lines;
 };

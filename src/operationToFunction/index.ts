@@ -32,7 +32,11 @@ const operationToFunction = async (
   method: string,
   operation: Operation,
   outDir: string,
-) => {
+): Promise<{
+  operationName: string;
+  hasParams: boolean;
+  importPath: string;
+}> => {
   const operationName = operation.operationId ?? constructOperationName(route, method);
 
   const lines: string[] = [];
@@ -55,6 +59,9 @@ const operationToFunction = async (
   if (requestBody) {
     refUnsupported(requestBody);
   }
+
+  lines.push("import type ClientConfig from '../ClientConfig.js';");
+  lines.push('');
 
   const parameterTypeName = `${operationName[0].toUpperCase() + operationName.substring(1)}Parameters`;
   const anyParams = requestBody != null || parameters.length > 0;
@@ -80,7 +87,7 @@ const operationToFunction = async (
   }
 
   lines.push(
-    `const ${operationName} = async (${anyParams ? `parameters: ${parameterTypeName}` : ''})${returnType ? `: Promise<${returnType}>` : ''} => {`,
+    `const ${operationName} = async (${anyParams ? `parameters: ${parameterTypeName},` : ''} config?: ClientConfig)${returnType ? `: Promise<${returnType}>` : ''} => {`,
   );
 
   lines.push(...destructureParameters(parameters, requestBody));
@@ -88,6 +95,14 @@ const operationToFunction = async (
   lines.push(...buildUrl(route, parameters));
 
   const queryParams = parameters.filter((param) => param.in === 'query');
+
+  lines.push('const headers = new Headers(config?.defaultParams?.headers);');
+  lines.push('');
+  lines.push('if (config?.auth?.bearer != null) {');
+  // eslint-disable-next-line no-template-curly-in-string
+  lines.push("  headers.set('Authentication', `Bearer ${config.auth.bearer}`);");
+  lines.push('}');
+  lines.push('');
 
   lines.push('const response = await fetch(');
   if (queryParams.length > 0) {
@@ -108,6 +123,7 @@ const operationToFunction = async (
     lines.push('url,');
   }
   lines.push(`{
+      ...config?.defaultParams,
       method: '${method.toUpperCase()}',`);
 
   if (requestBody) {
@@ -139,6 +155,12 @@ const operationToFunction = async (
     ${lines.join('\n')}
     `,
   );
+
+  return {
+    operationName,
+    hasParams: anyParams,
+    importPath: `./functions/${operationName}.js`,
+  };
 };
 
 export default operationToFunction;
