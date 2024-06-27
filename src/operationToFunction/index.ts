@@ -14,6 +14,7 @@ import buildResponseTypes from './buildResponseTypes.js';
 import typeboxImportStatements from '../schema2typebox/typeboxImportStatements.js';
 import { uppercaseFirst } from './helpers/stringManipulation.js';
 import template from '../templater.js';
+import buildResponseReturn from './buildResponseReturn.js';
 
 export class InvalidParamError extends Error {}
 
@@ -141,12 +142,11 @@ const operationToFunction = async (
 
       '});',
       '',
-      // TODO: better error handling
-      '  const json = await response.json();',
-      '  return ({',
-      '    status: response.status,',
-      '    data: json,',
-      `  } as ${returnType});`,
+
+      operation.responses == null &&
+        template.lines('return ({', 'status: response.status,', `} as ${returnType});`),
+
+      operation.responses != null && buildResponseReturn(operationName, operation.responses),
 
       '};',
       `export default ${operationName};`,

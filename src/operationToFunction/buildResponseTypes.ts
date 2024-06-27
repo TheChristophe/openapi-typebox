@@ -3,6 +3,7 @@ import { type CodegenSlice } from '../schema2typebox/joinBatch.js';
 import refUnsupported from './helpers/refUnsupported.js';
 import { collect } from '../schema2typebox/index.js';
 import template from '../templater.js';
+import { uppercaseFirst } from './helpers/stringManipulation.js';
 
 const buildResponseTypes = (
   operationName: string,
@@ -10,15 +11,15 @@ const buildResponseTypes = (
 ): CodegenSlice & { responseTypename: string } => {
   const lines: string[] = [];
   const extraImports: string[] = [];
-  const types: { typename: string; responseCode: string }[] = [];
+  const types: { typename?: string; responseCode: string }[] = [];
 
   for (const [statusCode, response] of Object.entries(responses)) {
     refUnsupported(response);
 
-    const responseName = operationName[0].toUpperCase() + operationName.substring(1) + statusCode;
+    const responseName = `${uppercaseFirst(operationName)}${statusCode}`;
     if (!response.content) {
-      lines.push(`type ${responseName} = unknown;`);
-      types.push({ typename: responseName, responseCode: statusCode });
+      //lines.push(`type ${responseName} = unknown;`);
+      types.push({ typename: undefined /*responseName*/, responseCode: statusCode });
       continue;
     }
 
@@ -32,8 +33,8 @@ const buildResponseTypes = (
       const code = schema?.code !== undefined ? schema.code : 'unknown';
       lines.push(
         template.lines(
-          `type ${responseName} = Static<typeof ${responseName}>;`,
           `const ${responseName} = ${code};`,
+          `type ${responseName} = Static<typeof ${responseName}>;`,
         ),
       );
       types.push({ typename: responseName, responseCode: statusCode });
@@ -41,14 +42,23 @@ const buildResponseTypes = (
     }
   }
 
-  const responseTypename = `${operationName[0].toUpperCase() + operationName.substring(1)}Response`;
-  lines.push('');
-  lines.push(`type ${responseTypename} =`);
-
-  for (const { typename, responseCode } of types) {
-    lines.push(`| { status: ${responseCode}; data: ${typename} }`);
-  }
-  lines.push(';');
+  const responseTypename = `${uppercaseFirst(operationName)}Response`;
+  lines.push(
+    '',
+    template.lines(
+      `type ${responseTypename} =`,
+      '{ response: Response; } & (',
+      types.map(({ typename, responseCode }) =>
+        template.concat(
+          `| { status: ${responseCode}; response: Response;`,
+          typename && `data: ${typename};`,
+          '}',
+        ),
+      ),
+      '| { status: undefined; }',
+      ');',
+    ),
+  );
 
   return {
     code: lines.join('\n'),
