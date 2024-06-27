@@ -134,6 +134,7 @@ const operationToFunction = async (
       '{',
       '...config?.defaultParams,',
       `method: '${method.toUpperCase()}',`,
+      'headers,',
 
       // TODO: non-json
       // TODO: how to handle multiple different request types?
