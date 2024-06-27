@@ -87,7 +87,7 @@ const processPaths = async (paths: Required<OpenApiSpec>['paths'], outDir: strin
   );
 
   await Promise.allSettled(
-    ['ClientConfig.ts', 'ApiError.ts'].map((file) =>
+    ['ClientConfig.ts', 'ApiError.ts', 'typeBranding.ts'].map((file) =>
       writeSanitizedFile(
         `${outDir}/${file}`,
         fs.readFileSync(
@@ -143,8 +143,8 @@ const buildClient = async (
     '  return ({',
     functions.map(({ operationName, hasParams }) =>
       hasParams
-        ? `${operationName}: (params: Parameters<typeof ${operationName}>[0], config?: ClientConfig) => ${operationName}(params, mergeConfigs(baseConfig, config)),`
-        : `${operationName}: (config?: ClientConfig) => ${operationName}(mergeConfigs(baseConfig, config)),`,
+        ? `${operationName}: ((params: Parameters<typeof ${operationName}>[0], config?: ClientConfig) => ${operationName}(params, mergeConfigs(baseConfig, config))) as typeof ${operationName},`
+        : `${operationName}: ((config?: ClientConfig) => ${operationName}(mergeConfigs(baseConfig, config))) as typeof ${operationName},`,
     ),
     '  });',
     '};',

@@ -64,6 +64,7 @@ const operationToFunction = async (
   }
 
   lines.push("import type ClientConfig from '../ClientConfig.js';");
+  lines.push("import { type ResponseBrand } from '../typeBranding.js';");
   configuration.throwOnError && lines.push("import ApiError from '../ApiError.js';");
 
   const parameterTypeName = `${uppercaseFirst(operationName)}Parameters`;
@@ -96,7 +97,7 @@ const operationToFunction = async (
   lines.push(
     template.lines(
       template.concat(
-        `const ${operationName} = async (`,
+        `const _${operationName} = async (`,
         anyParams && `parameters: ${parameterTypeName},`,
         'config?: ClientConfig)',
         configuration.throwOnError
@@ -179,6 +180,9 @@ const operationToFunction = async (
           'return ret.value;',
         ),
       '};',
+      ' ',
+      `const ${operationName} = _${operationName} as ResponseBrand<typeof _${operationName}, ${successType || 'void'}, ${errorType || 'never'}>;`,
+      ' ',
       `export default ${operationName};`,
     ),
   );
