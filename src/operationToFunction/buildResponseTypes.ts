@@ -8,7 +8,7 @@ import { uppercaseFirst } from './helpers/stringManipulation.js';
 const buildResponseTypes = (
   operationName: string,
   responses: Responses,
-): CodegenSlice & { responseTypename: string } => {
+): CodegenSlice & { successResponse: string; errorResponse: string } => {
   const lines: string[] = [];
   const extraImports: string[] = [];
   const types: { typename?: string; responseCode: string }[] = [];
@@ -42,19 +42,41 @@ const buildResponseTypes = (
     }
   }
 
-  const responseTypename = `${uppercaseFirst(operationName)}Response`;
+  const successResponse = `${uppercaseFirst(operationName)}ResponseGood`;
   lines.push(
     '',
     template.lines(
-      `type ${responseTypename} =`,
+      `type ${successResponse} =`,
       '{ response: Response; } & (',
-      types.map(({ typename, responseCode }) =>
-        template.concat(
-          `| { status: ${responseCode}; response: Response;`,
-          typename && `data: ${typename};`,
-          '}',
+      types
+        .filter(({ responseCode }) => {
+          const numeric = +responseCode;
+          return !Number.isNaN(numeric) && numeric >= 200 && numeric < 400;
+        })
+        .map(({ typename, responseCode }) =>
+          template.concat(`| { status: ${responseCode};`, typename && `data: ${typename};`, '}'),
         ),
-      ),
+      ');',
+    ),
+  );
+  const errorResponse = `${uppercaseFirst(operationName)}ResponseBad`;
+  lines.push(
+    '',
+    template.lines(
+      `type ${errorResponse} =`,
+      '{ response: Response; } & (',
+      types
+        .filter(({ responseCode }) => {
+          const numeric = +responseCode;
+          return !Number.isNaN(numeric) && numeric >= 400;
+        })
+        .map(({ typename, responseCode }) =>
+          template.concat(
+            `| { status: ${responseCode}; response: Response;`,
+            typename && `data: ${typename};`,
+            '}',
+          ),
+        ),
       '| { status: undefined; }',
       ');',
     ),
@@ -63,7 +85,8 @@ const buildResponseTypes = (
   return {
     code: lines.join('\n'),
     extraImports,
-    responseTypename,
+    successResponse,
+    errorResponse,
   };
 };
 

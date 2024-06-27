@@ -86,11 +86,15 @@ const processPaths = async (paths: Required<OpenApiSpec>['paths'], outDir: strin
     (err) => err != null && console.error(err),
   );
 
-  await writeSanitizedFile(
-    `${outDir}/ClientConfig.ts`,
-    fs.readFileSync(
-      import.meta.resolve('./clientLib/ClientConfig.ts').replace('file:///', ''),
-      'utf-8',
+  await Promise.allSettled(
+    ['ClientConfig.ts', 'ApiError.ts'].map((file) =>
+      writeSanitizedFile(
+        `${outDir}/${file}`,
+        fs.readFileSync(
+          import.meta.resolve(`./clientLib/${file}`).replace('file:///', ''),
+          'utf-8',
+        ),
+      ),
     ),
   );
 

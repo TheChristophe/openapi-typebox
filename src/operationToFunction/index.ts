@@ -15,6 +15,7 @@ import typeboxImportStatements from '../schema2typebox/typeboxImportStatements.j
 import { uppercaseFirst } from './helpers/stringManipulation.js';
 import template from '../templater.js';
 import buildResponseReturn from './buildResponseReturn.js';
+import configuration from '../configuration.js';
 
 export class InvalidParamError extends Error {}
 
@@ -63,6 +64,7 @@ const operationToFunction = async (
   }
 
   lines.push("import type ClientConfig from '../ClientConfig.js';");
+  configuration.throwOnError && lines.push("import ApiError from '../ApiError.js';");
 
   const parameterTypeName = `${uppercaseFirst(operationName)}Parameters`;
   const anyParams = requestBody != null || parameters.length > 0;
@@ -74,17 +76,19 @@ const operationToFunction = async (
     parameterSection.extraImports && imports.push(...parameterSection.extraImports);
   }
 
-  let returnType: string = '';
+  let successType: string = '';
+  let errorType: string = '';
 
   if (operation.responses && Object.keys(operation.responses).length > 0) {
-    const { responseTypename, ...responseSection } = buildResponseTypes(
+    const { successResponse, errorResponse, ...responseSection } = buildResponseTypes(
       operationName,
       operation.responses,
     );
     lines.push(responseSection.code);
     lines.push('\n');
     responseSection.extraImports && imports.push(...responseSection.extraImports);
-    returnType = responseTypename;
+    successType = successResponse;
+    errorType = errorResponse;
   }
 
   const queryParams = parameters.filter((param) => param.in === 'query');
@@ -95,7 +99,13 @@ const operationToFunction = async (
         `const ${operationName} = async (`,
         anyParams && `parameters: ${parameterTypeName},`,
         'config?: ClientConfig)',
-        returnType && `: Promise<${returnType}>`,
+        configuration.throwOnError
+          ? successType && `: Promise<${successType}>`
+          : template.concat(
+              (successType || errorType) && ':',
+              successType && `| ${successType}`,
+              errorType && `| ${errorType}`,
+            ),
         ' => {',
       ),
 
@@ -108,7 +118,7 @@ const operationToFunction = async (
       '',
       'if (config?.auth?.bearer != null) {',
       // eslint-disable-next-line no-template-curly-in-string
-      "  headers.set('Authentication', `Bearer ${config.auth.bearer}`);",
+      "  headers.set('authorization', `Bearer ${config.auth.bearer}`);",
       '}',
       '',
 
@@ -146,10 +156,28 @@ const operationToFunction = async (
       '',
 
       operation.responses == null &&
-        template.lines('return ({', 'status: response.status,', `} as ${returnType});`),
+        template.lines('return ({', 'status: response.status,', `} as ${errorType});`),
 
-      operation.responses != null && buildResponseReturn(operationName, operation.responses),
+      operation.responses != null &&
+        template.lines(
+          template.concat(
+            'let ret:',
+            successType && ` | { good: true; value: ${successType} }`,
+            errorType && ` | { good: false; value: ${errorType} }`,
+            ';',
+          ),
 
+          buildResponseReturn(operationName, operation.responses),
+          '',
+          configuration.throwOnError &&
+            template.lines(
+              'if (!ret.good) {',
+              `  return Promise.reject(new ApiError<${errorType}>(ret.value));`,
+              '}',
+            ),
+
+          'return ret.value;',
+        ),
       '};',
       `export default ${operationName};`,
     ),
