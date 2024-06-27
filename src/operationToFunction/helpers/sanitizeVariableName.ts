@@ -1,6 +1,5 @@
 import needsSanitization from './needsSanitization.js';
 
-const sanitizeVariableName = (varName: string) =>
-  needsSanitization(varName) ? `${varName}_` : varName;
+const sanitizeVariableName = (varName: string) => varName + (needsSanitization(varName) ? '_' : '');
 
 export default sanitizeVariableName;

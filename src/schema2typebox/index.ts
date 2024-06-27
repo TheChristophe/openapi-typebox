@@ -59,9 +59,11 @@ import {
 import MissingReferenceError from './MissingReferenceError.js';
 import { type CodegenSlice, joinBatch } from './joinBatch.js';
 import { lookupReference } from '../referenceDictionary.js';
-import createTypeboxImportStatements from './createTypeboxImportStatements.js';
+import typeboxImportStatements from './typeboxImportStatements.js';
+import template from '../templater.js';
+import { uppercaseFirst } from '../operationToFunction/helpers/stringManipulation.js';
 
-const sanitize = (name: string) => {
+const sanitizeModelName = (name: string) => {
   switch (name) {
     // type names that should be avoided
     case 'Error':
@@ -78,22 +80,28 @@ const options = (schemaOptions: string | undefined) => (schemaOptions ? `,${sche
 
 /** Generates TypeBox code from a given JSON schema */
 export const schema2typebox = (jsonSchema: JSONSchema7Definition, name?: string) => {
-  const exportedName = sanitize(name ?? createExportNameForSchema(jsonSchema));
+  const exportedName = sanitizeModelName(name ?? createExportNameForSchema(jsonSchema));
   // Ensuring that generated typebox code will contain an '$id' field.
   // see: https://github.com/xddq/schema2typebox/issues/32
   if (typeof jsonSchema !== 'boolean' && jsonSchema.$id === undefined) {
     jsonSchema.$id = exportedName;
   }
   const schema = collect(jsonSchema);
-  const exportedType = createExportedTypeForName(exportedName);
+  if (exportedName.length === 0) {
+    throw new Error("Can't create exported type for a name with length 0.");
+  }
+  const exportType = uppercaseFirst(exportedName);
 
-  return `${createTypeboxImportStatements()}
-${schema.extraImports?.join('\n') ?? ''}
-${schema.code.includes('OneOf([') ? importOneOf() : ''}
-${exportedType}
-export const ${exportedName} = ${schema.code};
+  return template.lines(
+    typeboxImportStatements,
 
-export default ${exportedName};`;
+    schema.extraImports && schema.extraImports.join('\n'),
+    schema.code.includes('OneOf([') && "import OneOf from './_oneOf.ts';",
+
+    `export type ${exportType} = Static<typeof ${exportedName}>;`,
+    `export const ${exportedName} = ${schema.code};`,
+    `export default ${exportedName};`,
+  );
 };
 
 const resolveObjectReference = (schema: RefSchema): CodegenSlice => {
@@ -161,19 +169,6 @@ export const createExportNameForSchema = (schema: JSONSchema7Definition) => {
   return schema['title'] ?? 'T';
 };
 
-const importOneOf = (): string => "import OneOf from './_oneOf.ts';";
-
-/**
- * @throws Error
- */
-const createExportedTypeForName = (exportedName: string) => {
-  if (exportedName.length === 0) {
-    throw new Error("Can't create exported type for a name with length 0.");
-  }
-  const typeName = `${exportedName.charAt(0).toUpperCase()}${exportedName.slice(1)}`;
-  return `export type ${typeName} = Static<typeof ${exportedName}>`;
-};
-
 const addOptionalModifier = (
   code: string,
   propertyName: string,
@@ -230,10 +225,7 @@ export const parseEnum = (schema: EnumSchema): CodegenSlice => {
 export const parseConst = (schema: ConstSchema): CodegenSlice => {
   const schemaOptions = parseSchemaOptions(schema);
   if (Array.isArray(schema.const)) {
-    const { code, extraImports } = joinBatch(
-      schema.const.map((schema) => parseType(schema)),
-      '\n',
-    );
+    const { code, extraImports } = joinBatch(schema.const.map(parseType), '\n');
 
     return {
       code: `Type.Union([${code}]${options(schemaOptions)})`,
@@ -253,6 +245,8 @@ export const parseConst = (schema: ConstSchema): CodegenSlice => {
     };
   }
   return {
+    // eslint issues with ts version
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     code: `Type.Literal(${schema.const}${options(schemaOptions)})`,
   };
 };
@@ -272,7 +266,7 @@ export const parseType = (type: JSONSchema7Type): CodegenSlice => {
     };
   } else if (isNumber(type) || isBoolean(type)) {
     return {
-      code: `Type.Literal(${type})`,
+      code: `Type.Literal(${type.toString()})`,
     };
   } else if (Array.isArray(type)) {
     const { code, extraImports } = joinBatch(type.map(parseType), ',');

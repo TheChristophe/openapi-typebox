@@ -7,7 +7,6 @@ function refUnsupported<T>(thing: Reference | T): asserts thing is T {
       `Reference to ${thing['$ref']} could not be resolved as references`,
     );
   }
-  //return true;
 }
 
 export default refUnsupported;

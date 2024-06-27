@@ -2,6 +2,7 @@ import type Responses from '../openapi/Responses.js';
 import { type CodegenSlice } from '../schema2typebox/joinBatch.js';
 import refUnsupported from './helpers/refUnsupported.js';
 import { collect } from '../schema2typebox/index.js';
+import template from '../templater.js';
 
 const buildResponseTypes = (
   operationName: string,
@@ -30,9 +31,10 @@ const buildResponseTypes = (
 
       const code = schema?.code !== undefined ? schema.code : 'unknown';
       lines.push(
-        `type ${responseName} = Static<typeof ${responseName}>;
-const ${responseName} = ${code};
-`,
+        template.lines(
+          `type ${responseName} = Static<typeof ${responseName}>;`,
+          `const ${responseName} = ${code};`,
+        ),
       );
       types.push({ typename: responseName, responseCode: statusCode });
       schema?.extraImports && extraImports.push(...schema.extraImports);

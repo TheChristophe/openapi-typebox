@@ -7,11 +7,11 @@ export type CodegenSlice = {
 const joinCode = (output: CodegenSlice[], joiner: string) =>
   output.map(({ code }) => code).join(joiner);
 
-const joinImports = (output: CodegenSlice[]) =>
-  output.reduce<string[]>((acc, { extraImports }) => {
-    extraImports != null && acc.push(...extraImports);
-    return acc;
-  }, []);
+const joinImports = (output: CodegenSlice[]): string[] =>
+  output
+    .map(({ extraImports }) => extraImports)
+    .filter((x) => x != null)
+    .flat();
 
 export const joinBatch = (output: CodegenSlice[], joiner: string): CodegenSlice => ({
   code: joinCode(output, joiner),
