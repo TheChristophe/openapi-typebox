@@ -103,6 +103,7 @@ const operationToFunction = async (
 
       buildUrl(route, parameters),
 
+      'const localFetch = config?.fetch ?? fetch;',
       'const headers = new Headers(config?.defaultParams?.headers);',
       '',
       'if (config?.auth?.bearer != null) {',
@@ -111,7 +112,7 @@ const operationToFunction = async (
       '}',
       '',
 
-      'const response = await fetch(',
+      'const response = await localFetch(',
 
       template.concat(
         // eslint-disable-next-line no-template-curly-in-string

@@ -98,8 +98,8 @@ export const schema2typebox = (jsonSchema: JSONSchema7Definition, name?: string)
     schema.extraImports && schema.extraImports.join('\n'),
     schema.code.includes('OneOf([') && "import OneOf from './_oneOf.ts';",
 
-    `export type ${exportType} = Static<typeof ${exportedName}>;`,
     `export const ${exportedName} = ${schema.code};`,
+    `export type ${exportType} = Static<typeof ${exportedName}>;`,
     `export default ${exportedName};`,
   );
 };

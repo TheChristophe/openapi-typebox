@@ -5,6 +5,7 @@ type ClientConfig = {
   auth?: {
     bearer?: string;
   };
+  fetch?: typeof fetch;
   defaultParams?: FetchParameters;
 };
 
@@ -22,6 +23,7 @@ export const mergeConfigs = (first?: ClientConfig, second?: ClientConfig): Clien
   const target: ClientConfig = {
     basePath: second?.basePath ?? first?.basePath,
     auth: second?.auth ?? first?.auth,
+    fetch: second?.fetch ?? first?.fetch,
   };
 
   Object.assign(rest, rest2);
