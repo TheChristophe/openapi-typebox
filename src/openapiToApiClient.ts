@@ -33,7 +33,7 @@ const processComponentSchemas = (
 
   writeSourceFile(
     `${outDir}/models/_oneOf.ts`,
-    fs.readFileSync(import.meta.resolve('./clientLib/_oneOf.ts').replace('file:///', ''), 'utf-8'),
+    fs.readFileSync(new URL(import.meta.resolve('./clientLib/_oneOf.ts')), 'utf-8'),
   );
 
   while (openSet.length > 0) {
@@ -92,7 +92,7 @@ const processPaths = (paths: Required<OpenApiSpec>['paths'], outDir: string) => 
   for (const file of sharedFiles) {
     writeSourceFile(
       `${outDir}/${file}`,
-      fs.readFileSync(import.meta.resolve(`./clientLib/${file}`).replace('file:///', ''), 'utf-8'),
+      fs.readFileSync(new URL(import.meta.resolve(`./clientLib/${file}`)), 'utf-8'),
     );
   }
 
