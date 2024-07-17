@@ -35,6 +35,16 @@ const cli = meow(
         type: 'string',
         isRequired: (flags) => !!flags['package'],
       },
+      packageRegistry: {
+        type: 'string',
+      },
+      packageAuthor: {
+        type: 'string',
+      },
+      snapshotVersion: {
+        type: 'boolean',
+        default: false,
+      },
     },
   },
 );
@@ -46,7 +56,10 @@ if (cli.input.length === 0) {
 if (cli.flags.package) {
   configuration.package = {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    packageName: cli.flags.packageName!,
+    name: cli.flags.packageName!,
+    registry: cli.flags.packageRegistry,
+    author: cli.flags.packageAuthor,
+    snapshotVersion: cli.flags.snapshotVersion,
   };
 }
 

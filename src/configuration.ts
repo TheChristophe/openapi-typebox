@@ -4,7 +4,10 @@ type Confirmation = {
   outputDir: string;
 
   package?: {
-    packageName: string;
+    name: string;
+    registry?: string;
+    author?: string;
+    snapshotVersion: boolean;
   };
 };
 

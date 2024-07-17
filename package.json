@@ -20,7 +20,7 @@
     "lint": "eslint src",
     "lint:export": "eslint --output-file eslint_report.json --format json src",
     "lint:formatting": "prettier --check .",
-    "type-check": "tsc",
+    "type-check": "tsc --noEmit",
     "cli": "node ./dist/cli.js"
   },
   "packageManager": "yarn@4.3.0",

@@ -80,7 +80,7 @@ const processComponentSchemas = (
   }
 };
 
-const processPaths = async (paths: Required<OpenApiSpec>['paths'], outDir: string) => {
+const processPaths = (paths: Required<OpenApiSpec>['paths'], outDir: string) => {
   console.log('Mkdir', path.join(outDir, 'functions'));
   fs.mkdir(
     path.join(outDir, 'functions'),
@@ -105,7 +105,7 @@ const processPaths = async (paths: Required<OpenApiSpec>['paths'], outDir: strin
         continue;
       }
 
-      functions.push(await operationToFunction(route, method, operation, outDir));
+      functions.push(operationToFunction(route, method, operation, outDir));
     }
   }
 
@@ -161,9 +161,16 @@ const generatePackage = (version: string, outDir: string) => {
     `${outDir}/package.json`,
     JSON.stringify(
       {
-        name: configuration.package.packageName,
-        version: version,
-        typings: './dist/index.d.ts',
+        name: configuration.package.name,
+        author: configuration.package.author,
+        version: configuration.package.snapshotVersion
+          ? `${version}-snapshot.${new Date().toISOString()}`
+          : version,
+        ...(configuration.package.registry && {
+          publishConfig: {
+            registry: configuration.package.registry,
+          },
+        }),
         scripts: {
           build: 'tsc',
           prepare: 'npm run build',
@@ -178,6 +185,7 @@ const generatePackage = (version: string, outDir: string) => {
           typescript: '^5',
         },
         module: './dist/index.js',
+        typings: './dist/index.d.ts',
         sideEffects: false,
         type: 'module',
         exports: {
@@ -236,7 +244,7 @@ const openapiToApiClient = async (specPath: string, outDir: string) => {
 
   spec.components?.schemas != null && processComponentSchemas(spec.components.schemas, outPath);
 
-  spec.paths != null && (await processPaths(spec.paths, outPath));
+  spec.paths != null && processPaths(spec.paths, outPath);
 
   if (configuration.package) {
     generatePackage(spec.info.version, outPath);
