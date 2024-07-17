@@ -1,7 +1,7 @@
 import type Operation from '../openapi/Operation.js';
 import type Parameter from '../openapi/Parameter.js';
 import type Reference from '../openapi/Reference.js';
-import writeSanitizedFile from '../writeSanitizedFile.js';
+import writeSourceFile from '../writeSourceFile.js';
 import type RequestBody from '../openapi/RequestBody.js';
 
 import routeToOperationName from './helpers/routeToOperationName.js';
@@ -30,16 +30,16 @@ function forbidReferencesInRequestBody(
   refUnsupported(requestBody);
 }
 
-const operationToFunction = async (
+const operationToFunction = (
   route: string,
   method: string,
   operation: Operation,
   outDir: string,
-): Promise<{
+): {
   operationName: string;
   hasParams: boolean;
   importPath: string;
-}> => {
+} => {
   const operationName = operation.operationId ?? routeToOperationName(route, method);
 
   const lines: string[] = [];
@@ -189,7 +189,7 @@ const operationToFunction = async (
     ),
   );
 
-  await writeSanitizedFile(
+  writeSourceFile(
     `${outDir}/functions/${operationName}.ts`,
     `${typeboxImportStatements}
     ${imports.join('\n')}

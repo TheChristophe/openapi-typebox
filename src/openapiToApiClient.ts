@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import YAML from 'yaml';
 import type OpenApiSpec from './openapi/index.js';
 import { schema2typebox } from './schema2typebox/index.js';
-import writeSanitizedFile from './writeSanitizedFile.js';
+import writeSourceFile from './writeSourceFile.js';
 import MissingReferenceError from './schema2typebox/MissingReferenceError.js';
 import path from 'node:path';
 import { OpenApiMethods } from './openapi/PathItem.js';
@@ -11,8 +11,9 @@ import type JsonSchema from './openapi/JsonSchema.js';
 import { addReference, knownReferences } from './referenceDictionary.js';
 import template from './templater.js';
 import configuration from './configuration.js';
+import sanitizeBulk from './sanitizeBulk.js';
 
-const processComponentSchemas = async (
+const processComponentSchemas = (
   schemas: Required<Required<OpenApiSpec>['components']>['schemas'],
   outDir: string,
 ) => {
@@ -30,7 +31,7 @@ const processComponentSchemas = async (
     schema['title'] ??= key;
   }
 
-  await writeSanitizedFile(
+  writeSourceFile(
     `${outDir}/models/_oneOf.ts`,
     fs.readFileSync(import.meta.resolve('./clientLib/_oneOf.ts').replace('file:///', ''), 'utf-8'),
   );
@@ -44,7 +45,7 @@ const processComponentSchemas = async (
       const [key, schema] = openSet[i];
       try {
         const destFile = `${outDir}/models/${key}.ts`;
-        await writeSanitizedFile(destFile, schema2typebox(schema, key));
+        writeSourceFile(destFile, schema2typebox(schema, key));
 
         addReference(`#/components/schemas/${key}`, {
           name: key,
@@ -87,17 +88,13 @@ const processPaths = async (paths: Required<OpenApiSpec>['paths'], outDir: strin
     (err) => err != null && console.error(err),
   );
 
-  await Promise.allSettled(
-    ['ClientConfig.ts', 'ApiError.ts', 'typeBranding.ts'].map((file) =>
-      writeSanitizedFile(
-        `${outDir}/${file}`,
-        fs.readFileSync(
-          import.meta.resolve(`./clientLib/${file}`).replace('file:///', ''),
-          'utf-8',
-        ),
-      ),
-    ),
-  );
+  const sharedFiles = ['ClientConfig.ts', 'ApiError.ts', 'typeBranding.ts'];
+  for (const file of sharedFiles) {
+    writeSourceFile(
+      `${outDir}/${file}`,
+      fs.readFileSync(import.meta.resolve(`./clientLib/${file}`).replace('file:///', ''), 'utf-8'),
+    );
+  }
 
   const functions: Awaited<ReturnType<typeof operationToFunction>>[] = [];
 
@@ -112,10 +109,10 @@ const processPaths = async (paths: Required<OpenApiSpec>['paths'], outDir: strin
     }
   }
 
-  await buildClient(functions, outDir);
+  buildClient(functions, outDir);
 };
 
-const buildClient = async (
+const buildClient = (
   functions: Awaited<ReturnType<typeof operationToFunction>>[],
   outDir: string,
 ) => {
@@ -153,7 +150,7 @@ const buildClient = async (
     'export default buildClient;',
   );
 
-  await writeSanitizedFile(`${outDir}/buildClient.ts`, source);
+  writeSourceFile(`${outDir}/buildClient.ts`, source);
 };
 
 const generatePackage = (version: string, outDir: string) => {
@@ -234,16 +231,18 @@ const openapiToApiClient = async (specPath: string, outDir: string) => {
 
   const outPath = path.resolve(outDir);
   console.log('Mkdir', outPath);
-  fs.mkdir(outPath, { recursive: true }, (err) => err != null && console.error(err));
+  fs.rmSync(outPath, { recursive: true, force: true });
+  fs.mkdirSync(outPath, { recursive: true });
 
-  spec.components?.schemas != null &&
-    (await processComponentSchemas(spec.components.schemas, outPath));
+  spec.components?.schemas != null && processComponentSchemas(spec.components.schemas, outPath);
 
   spec.paths != null && (await processPaths(spec.paths, outPath));
 
   if (configuration.package) {
     generatePackage(spec.info.version, outPath);
   }
+
+  await sanitizeBulk(outPath);
 };
 
 export default openapiToApiClient;
