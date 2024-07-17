@@ -10,6 +10,7 @@ import operationToFunction from './operationToFunction/index.js';
 import type JsonSchema from './openapi/JsonSchema.js';
 import { addReference, knownReferences } from './referenceDictionary.js';
 import template from './templater.js';
+import configuration from './configuration.js';
 
 const processComponentSchemas = async (
   schemas: Required<Required<OpenApiSpec>['components']>['schemas'],
@@ -155,6 +156,69 @@ const buildClient = async (
   await writeSanitizedFile(`${outDir}/buildClient.ts`, source);
 };
 
+const generatePackage = (version: string, outDir: string) => {
+  if (!configuration.package) {
+    return;
+  }
+  fs.writeFileSync(
+    `${outDir}/package.json`,
+    JSON.stringify(
+      {
+        name: configuration.package.packageName,
+        version: version,
+        typings: './dist/index.d.ts',
+        scripts: {
+          build: 'tsc',
+          prepare: 'npm run build',
+        },
+        dependencies: {
+          // TODO: find a good way to keep these updated
+          '@sinclair/typebox': '^0.32',
+        },
+        devDependencies: {
+          // TODO: find a good way to keep these updated
+          '@types/node': '^20',
+          typescript: '^5',
+        },
+        module: './dist/index.js',
+        sideEffects: false,
+        type: 'module',
+        exports: {
+          '.': {
+            types: './dist/index.d.ts',
+            import: './dist/index.js',
+            default: './dist/index',
+          },
+        },
+        files: ['/dist', '/package.json', '/README.md'],
+      },
+      null,
+      2,
+    ),
+  );
+  fs.writeFileSync(
+    `${outDir}/tsconfig.json`,
+    JSON.stringify(
+      {
+        compilerOptions: {
+          declaration: true,
+          target: 'es2020',
+          module: 'NodeNext',
+          noImplicitAny: true,
+          outDir: 'dist',
+          rootDir: '.',
+          typeRoots: ['node_modules/@types'],
+          moduleResolution: 'NodeNext',
+          allowSyntheticDefaultImports: true,
+        },
+        exclude: ['dist', 'node_modules'],
+      },
+      null,
+      2,
+    ),
+  );
+};
+
 const openapiToApiClient = async (specPath: string, outDir: string) => {
   // TODO: validation
   let spec: OpenApiSpec;
@@ -176,6 +240,10 @@ const openapiToApiClient = async (specPath: string, outDir: string) => {
     (await processComponentSchemas(spec.components.schemas, outPath));
 
   spec.paths != null && (await processPaths(spec.paths, outPath));
+
+  if (configuration.package) {
+    generatePackage(spec.info.version, outPath);
+  }
 };
 
 export default openapiToApiClient;

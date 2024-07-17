@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import meow from 'meow';
 import openapiToApiClient from './openapiToApiClient.js';
+import configuration from './configuration.js';
 
 const cli = meow(
   `
@@ -9,6 +10,8 @@ const cli = meow(
 
   Options
     --output, -o Output folder, default to "./client"
+    --package Generate a package.json
+    --packageName Package name for the package.json
 
   Examples
     $ openapi-box ./openapi.json
@@ -23,12 +26,28 @@ const cli = meow(
         shortFlag: 'o',
         default: './client',
       },
+
+      package: {
+        type: 'boolean',
+        default: false,
+      },
+      packageName: {
+        type: 'string',
+        isRequired: (flags) => !!flags['package'],
+      },
     },
   },
 );
 
 if (cli.input.length === 0) {
   cli.showHelp();
+}
+
+if (cli.flags.package) {
+  configuration.package = {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    packageName: cli.flags.packageName!,
+  };
 }
 
 await openapiToApiClient(cli.input[0], cli.flags.output);

@@ -172,7 +172,9 @@ const operationToFunction = async (
           '',
           configuration.throwOnError &&
             template.lines(
-              'if (!ret.good) {',
+              '// typescript bug',
+              '// eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare',
+              'if (ret.good === false) {',
               `  return Promise.reject(new ApiError<${errorType}>(ret.value));`,
               '}',
             ),

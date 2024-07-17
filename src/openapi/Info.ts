@@ -51,6 +51,10 @@ type Info = {
         url?: string;
       }
   );
+  /**
+   * The version of the OpenAPI document (which is distinct from the [OpenAPI Specification version](https://swagger.io/specification/#oas-version) or the API implementation version).
+   */
+  version: string;
 };
 
 export default Info;
