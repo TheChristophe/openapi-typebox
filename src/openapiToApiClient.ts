@@ -239,7 +239,7 @@ const openapiToApiClient = async (specPath: string, outDir: string) => {
 
   const outPath = path.resolve(outDir);
   console.log('Mkdir', outPath);
-  fs.rmSync(outPath, { recursive: true, force: true });
+  //fs.rmSync(outPath, { recursive: true, force: true });
   fs.mkdirSync(outPath, { recursive: true });
 
   spec.components?.schemas != null && processComponentSchemas(spec.components.schemas, outPath);
