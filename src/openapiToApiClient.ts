@@ -149,15 +149,27 @@ const generatePackage = (version: string, outDir: string) => {
   if (!configuration.package) {
     return;
   }
+
+  let ver = version;
+  if (configuration.package.snapshotVersion) {
+    const now = new Date();
+    const f = (n: number, length: number = 2) => n.toString().padStart(length, '0');
+    const timestamp = `${f(now.getFullYear(), 4)}${f(now.getMonth())}${f(now.getDay())}T${f(now.getUTCHours())}${f(now.getUTCMinutes())}${f(now.getUTCSeconds())}Z`;
+    if (ver.includes('-')) {
+      // pre-release, append timestamp
+      ver = `${ver}.${timestamp}`;
+    } else {
+      ver = `${ver}-snapshot.${timestamp}`;
+    }
+  }
+
   fs.writeFileSync(
     `${outDir}/package.json`,
     JSON.stringify(
       {
         name: configuration.package.name,
         author: configuration.package.author,
-        version: configuration.package.snapshotVersion
-          ? `${version}-snapshot.${new Date().toISOString()}`
-          : version,
+        version: ver,
         ...(configuration.package.registry && {
           publishConfig: {
             registry: configuration.package.registry,
