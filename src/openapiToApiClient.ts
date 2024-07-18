@@ -18,11 +18,7 @@ const processComponentSchemas = (
   outDir: string,
 ) => {
   console.log('Mkdir', path.join(outDir, 'models'));
-  fs.mkdir(
-    path.join(outDir, 'models'),
-    { recursive: true },
-    (err) => err != null && console.error(err),
-  );
+  fs.mkdirSync(path.join(outDir, 'models'), { recursive: true });
 
   // TODO: build a tree instead, could then be parallelized
   // TODO: type assertion
@@ -82,11 +78,7 @@ const processComponentSchemas = (
 
 const processPaths = (paths: Required<OpenApiSpec>['paths'], outDir: string) => {
   console.log('Mkdir', path.join(outDir, 'functions'));
-  fs.mkdir(
-    path.join(outDir, 'functions'),
-    { recursive: true },
-    (err) => err != null && console.error(err),
-  );
+  fs.mkdirSync(path.join(outDir, 'functions'), { recursive: true });
 
   const sharedFiles = ['ClientConfig.ts', 'ApiError.ts', 'typeBranding.ts'];
   for (const file of sharedFiles) {
