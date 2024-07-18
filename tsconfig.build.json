@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src/**/*", "test/**/*", "playground/**/*", "tmp/**/*"],
+  "include": ["src/**/*"],
   "compilerOptions": {
     "outDir": "dist",
     "declaration": true
