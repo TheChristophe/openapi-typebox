@@ -177,7 +177,7 @@ const generatePackage = (version: string, outDir: string) => {
         }),
         scripts: {
           build: 'tsc',
-          prepare: 'npm run build',
+          prepublishOnly: 'npm run build',
         },
         dependencies: {
           // TODO: find a good way to keep these updated
