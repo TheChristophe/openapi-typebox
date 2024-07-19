@@ -193,8 +193,13 @@ const generatePackage = (version: string, outDir: string) => {
         sideEffects: false,
         type: 'module',
         exports: {
+          './*': {
+            types: './dist/*.js',
+            import: './dist/*.js',
+            default: './dist/*.js',
+          },
           './*.js': {
-            types: './dist/*.d.ts',
+            types: './dist/*.js',
             import: './dist/*.js',
             default: './dist/*.js',
           },
