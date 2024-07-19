@@ -62,6 +62,7 @@ import { lookupReference } from '../referenceDictionary.js';
 import typeboxImportStatements from './typeboxImportStatements.js';
 import template from '../templater.js';
 import { uppercaseFirst } from '../operationToFunction/helpers/stringManipulation.js';
+import sanitizeVariableName from '../operationToFunction/helpers/sanitizeVariableName.js';
 
 const sanitizeModelName = (name: string) => {
   switch (name) {
@@ -77,6 +78,36 @@ const sanitizeModelName = (name: string) => {
   return name;
 };
 const options = (schemaOptions: string | undefined) => (schemaOptions ? `,${schemaOptions}` : '');
+
+/**
+ * https://stackoverflow.com/a/2970667
+ * @param str
+ */
+const camelize = (str: string) =>
+  str
+    .replaceAll(/[^a-zA-Z0-9_\s]/g, '')
+    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) =>
+      index === 0 ? word.toLowerCase() : word.toUpperCase(),
+    )
+    .replaceAll(/\s+/g, '');
+
+const valueToEnumEntry = (value: JSONSchema7Type) => {
+  if (value == null) {
+    return 'Null: null,';
+  } else if (typeof value === 'boolean') {
+    return value ? 'True: true,' : 'False: false,';
+  } else if (typeof value === 'number') {
+    return `${sanitizeVariableName(uppercaseFirst(camelize(value.toString())))}: ${value.toString()},`;
+  } else if (typeof value === 'string') {
+    return `${sanitizeVariableName(uppercaseFirst(camelize(value.toString())))}: '${value}',`;
+  } else if (typeof value === 'object') {
+    throw new Error('Objects and arrays not supported yet for enums');
+  }
+  throw new Error('valueToEnumName: passed exhaustive if');
+};
+
+const generateEnum = (name: string, schema: EnumSchema) =>
+  template.lines(`const ${name} = {`, schema.enum.map(valueToEnumEntry), '} as const;');
 
 /** Generates TypeBox code from a given JSON schema */
 export const schema2typebox = (jsonSchema: JSONSchema7Definition, name?: string) => {
@@ -98,8 +129,12 @@ export const schema2typebox = (jsonSchema: JSONSchema7Definition, name?: string)
     schema.extraImports && schema.extraImports.join('\n'),
     schema.code.includes('OneOf([') && "import OneOf from './_oneOf.ts';",
 
-    `export const ${exportedName} = ${schema.code};`,
-    `export type ${exportType} = Static<typeof ${exportedName}>;`,
+    `export const ${exportedName}Schema = ${schema.code};`,
+    `type ${exportType} = Static<typeof ${exportedName}Schema>;`,
+
+    // boolean is weird
+    !isBoolean(jsonSchema) && isEnumSchema(jsonSchema) && generateEnum(exportType, jsonSchema),
+
     `export default ${exportedName};`,
   );
 };
@@ -112,9 +147,9 @@ const resolveObjectReference = (schema: RefSchema): CodegenSlice => {
   }
 
   return {
-    code: entry.name,
+    code: `${entry.name}Schema`,
     // TODO: resolve imports better than just using root-relative imports
-    extraImports: [`import ${entry.name} from "../models/${entry.name}.js";`],
+    extraImports: [`import { ${entry.name}Schema } from "../models/${entry.name}.js";`],
   };
 };
 
