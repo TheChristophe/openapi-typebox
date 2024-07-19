@@ -210,6 +210,18 @@ const generatePackage = (version: string, outDir: string) => {
         sideEffects: false,
         type: 'module',
         exports: {
+          /*
+          './functions': {
+            types: './dist/functions/index.js',
+            import: './dist/functions/index.js',
+            default: './dist/functions/index.js',
+          },
+          */
+          './models': {
+            types: './dist/models/index.js',
+            import: './dist/models/index.js',
+            default: './dist/models/index.js',
+          },
           './*': {
             types: './dist/*.js',
             import: './dist/*.js',
