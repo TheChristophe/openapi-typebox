@@ -13,6 +13,21 @@ import template from './templater.js';
 import configuration from './configuration.js';
 import sanitizeBulk from './sanitizeBulk.js';
 
+const generateComponentIndex: (...args: Parameters<typeof processComponentSchemas>) => void = (
+  schemas,
+  outDir,
+) => {
+  writeSourceFile(
+    `${outDir}/models/index.ts`,
+    template.lines(
+      ...Object.entries(schemas)
+        .filter(([, schema]) => schema !== undefined)
+        .sort(([key1], [key2]) => (key1 < key2 ? -1 : key1 > key2 ? 1 : 0))
+        .map(([key]) => `export { ${key}Schema, default as ${key} } from './${key}.js';`),
+    ),
+  );
+};
+
 const processComponentSchemas = (
   schemas: Required<Required<OpenApiSpec>['components']>['schemas'],
   outDir: string,
@@ -74,6 +89,8 @@ const processComponentSchemas = (
       process.exit(1);
     }
   }
+
+  generateComponentIndex(schemas, outDir);
 };
 
 const processPaths = (paths: Required<OpenApiSpec>['paths'], outDir: string) => {
