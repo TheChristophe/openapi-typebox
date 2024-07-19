@@ -193,10 +193,10 @@ const generatePackage = (version: string, outDir: string) => {
         sideEffects: false,
         type: 'module',
         exports: {
-          '.': {
-            types: './dist/index.d.ts',
-            import: './dist/index.js',
-            default: './dist/index',
+          './*.js': {
+            types: './dist/*.d.ts',
+            import: './dist/*.js',
+            default: './dist/*.js',
           },
         },
         files: ['/dist', '/package.json', '/README.md'],
