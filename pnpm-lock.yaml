@@ -17,9 +17,6 @@ importers:
       fp-ts:
         specifier: ^2.16.9
         version: 2.16.9
-      json-schema:
-        specifier: ^0.4.0
-        version: 0.4.0
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -39,6 +36,9 @@ importers:
       '@types/eslint':
         specifier: ^8.56.12
         version: 8.56.12
+      '@types/json-schema':
+        specifier: ^7.0.15
+        version: 7.0.15
       '@types/lodash':
         specifier: ^4.17.12
         version: 4.17.12
@@ -973,9 +973,6 @@ packages:
 
   json-schema-traverse@0.4.1:
     resolution: {integrity: sha512-xbbCH5dCYU5T8LcEhhuh7HJ88HXuW3qsI3Y0zOZFKfZEHcpWiHU/Jxzk629Brsab/mMiHQti9wMP+845RPe3Vg==}
-
-  json-schema@0.4.0:
-    resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
 
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
@@ -2582,8 +2579,6 @@ snapshots:
   json-buffer@3.0.1: {}
 
   json-schema-traverse@0.4.1: {}
-
-  json-schema@0.4.0: {}
 
   json-stable-stringify-without-jsonify@1.0.1: {}
 

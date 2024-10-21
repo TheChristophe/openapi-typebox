@@ -61,8 +61,8 @@ import { type CodegenSlice, joinBatch } from './joinBatch.js';
 import { lookupReference } from '../referenceDictionary.js';
 import typeboxImportStatements from './typeboxImportStatements.js';
 import template from '../templater.js';
-import { uppercaseFirst } from '../operationToFunction/helpers/stringManipulation.js';
-import sanitizeVariableName from '../operationToFunction/helpers/sanitizeVariableName.js';
+import { uppercaseFirst } from '../clientGeneration/operationToFunction/helpers/stringManipulation.js';
+import sanitizeVariableName from '../clientGeneration/operationToFunction/helpers/sanitizeVariableName.js';
 
 const sanitizeModelName = (name: string) => {
   switch (name) {

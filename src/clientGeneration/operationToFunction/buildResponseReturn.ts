@@ -1,5 +1,5 @@
-import template from '../templater.js';
-import type Responses from '../openapi/Responses.js';
+import template from '../../templater.js';
+import type Responses from '../../openapi/Responses.js';
 import refUnsupported from './helpers/refUnsupported.js';
 import { uppercaseFirst } from './helpers/stringManipulation.js';
 

@@ -8,4 +8,4 @@ export {
   type HTTPRedirection,
   type HTTPClientError,
   type HTTPServerError,
-} from '../clientLib/HTTPStatusCode.js';
+} from '../clientGeneration/clientLib/HTTPStatusCode.js';

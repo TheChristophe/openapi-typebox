@@ -1,8 +1,8 @@
-import type Parameter from '../openapi/Parameter.js';
-import type RequestBody from '../openapi/RequestBody.js';
+import type Parameter from '../../openapi/Parameter.js';
+import type RequestBody from '../../openapi/RequestBody.js';
 import needsSanitization from './helpers/needsSanitization.js';
 import sanitizeVariableName from './helpers/sanitizeVariableName.js';
-import template from '../templater.js';
+import template from '../../templater.js';
 
 const destructureParameters = (parameters: Parameter[], requestBody?: RequestBody) => {
   if (parameters.length === 0 && requestBody == null) {

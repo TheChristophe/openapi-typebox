@@ -14,7 +14,7 @@
   "homepage": "https://github.com/thechristophe/openapi-typebox#readme",
   "scripts": {
     "build": "tsc --project tsconfig.build.json && pnpm copy-files",
-    "copy-files": "copyfiles -f ./src/clientLib/* ./dist/clientLib/",
+    "copy-files": "copyfiles -f src/clientGeneration/clientLib/* ./dist/clientLib/",
     "clean": "rimraf dist/",
     "prepublishOnly": "pnpm clean && pnpm build",
     "lint": "eslint src",
@@ -26,6 +26,7 @@
   "devDependencies": {
     "@types/copyfiles": "^2.4.4",
     "@types/eslint": "^8.56.12",
+    "@types/json-schema": "^7.0.15",
     "@types/lodash": "^4.17.12",
     "@types/node": "^20.16.13",
     "@types/yaml": "^1.9.7",
@@ -45,7 +46,6 @@
     "@sinclair/typebox": "^0.32.35",
     "eslint": "^8.57.1",
     "fp-ts": "^2.16.9",
-    "json-schema": "^0.4.0",
     "lodash": "^4.17.21",
     "meow": "^13.2.0",
     "prettier": "^3.3.3",
