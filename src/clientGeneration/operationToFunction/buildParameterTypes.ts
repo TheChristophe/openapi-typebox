@@ -1,8 +1,8 @@
-import type Parameter from '../openapi/Parameter.js';
-import type RequestBody from '../openapi/RequestBody.js';
-import { type CodegenSlice } from '../schema2typebox/joinBatch.js';
-import { collect } from '../schema2typebox/index.js';
-import template from '../templater.js';
+import type Parameter from '../../openapi/Parameter.js';
+import type RequestBody from '../../openapi/RequestBody.js';
+import { type CodegenSlice } from '../../schema2typebox/joinBatch.js';
+import { collect } from '../../schema2typebox/index.js';
+import template from '../../templater.js';
 
 const generateParameter = (parameter: Parameter): CodegenSlice => {
   const schema = parameter.schema !== undefined ? collect(parameter.schema) : undefined;

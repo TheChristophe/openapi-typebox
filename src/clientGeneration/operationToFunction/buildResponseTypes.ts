@@ -1,8 +1,8 @@
-import type Responses from '../openapi/Responses.js';
-import { type CodegenSlice } from '../schema2typebox/joinBatch.js';
+import type Responses from '../../openapi/Responses.js';
+import { type CodegenSlice } from '../../schema2typebox/joinBatch.js';
 import refUnsupported from './helpers/refUnsupported.js';
-import { collect } from '../schema2typebox/index.js';
-import template from '../templater.js';
+import { collect } from '../../schema2typebox/index.js';
+import template from '../../templater.js';
 import { uppercaseFirst } from './helpers/stringManipulation.js';
 import { SUCCESS_CODES } from '../clientLib/HTTPStatusCode.js';
 
@@ -53,12 +53,13 @@ const buildResponseTypes = (
 
     template.lines(
       types.map(({ typename, responseCode }) =>
-        template.concat(
+        template.lines(
           `type Response${responseCode} = {`,
-          'response: Response;',
-          `status: ${responseCode};`,
-          typename && `data: ${typename};`,
+          '  response: Response;',
+          `  status: ${responseCode};`,
+          typename && `  data: ${typename};`,
           '};',
+          ' ',
         ),
       ),
 
@@ -74,13 +75,7 @@ const buildResponseTypes = (
       ' | ResponseUnknown',
       ';',
 
-      'type Allow<Allowed extends number> =',
-      types.map(
-        ({ responseCode }) =>
-          `| (${responseCode} extends Allowed ? Response${responseCode} : never)`,
-      ),
-      '| (-1 extends Allowed ? ResponseUnknown : never)',
-      ';',
+      `type AllResponses = ${successResponse} | ${errorResponse} | ResponseUnknown;`,
     ),
   );
 

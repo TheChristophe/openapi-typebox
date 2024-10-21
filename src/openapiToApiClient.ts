@@ -1,103 +1,19 @@
 import fs from 'node:fs';
 import YAML from 'yaml';
 import type OpenApiSpec from './openapi/index.js';
-import { schema2typebox } from './schema2typebox/index.js';
 import writeSourceFile from './writeSourceFile.js';
-import MissingReferenceError from './schema2typebox/MissingReferenceError.js';
 import path from 'node:path';
 import { OpenApiMethods } from './openapi/PathItem.js';
-import operationToFunction from './operationToFunction/index.js';
-import type JsonSchema from './openapi/JsonSchema.js';
-import { addReference, knownReferences } from './referenceDictionary.js';
+import operationToFunction from './clientGeneration/operationToFunction/index.js';
 import template from './templater.js';
 import configuration from './configuration.js';
 import sanitizeBulk from './sanitizeBulk.js';
+import { processComponentSchemas } from './clientGeneration/generateSchemas.js';
 
-const generateComponentIndex: (...args: Parameters<typeof processComponentSchemas>) => void = (
-  schemas,
-  outDir,
-) => {
-  writeSourceFile(
-    `${outDir}/models/index.ts`,
-    template.lines(
-      ...Object.entries(schemas)
-        .filter(([, schema]) => schema !== undefined)
-        .sort(([key1], [key2]) => (key1 < key2 ? -1 : key1 > key2 ? 1 : 0))
-        .map(([key]) => `export { ${key}Schema, default as ${key} } from './${key}.js';`),
-    ),
-  );
-};
-
-const processComponentSchemas = (
-  schemas: Required<Required<OpenApiSpec>['components']>['schemas'],
+const processPaths = (
+  paths: Required<OpenApiSpec>['paths'],
   outDir: string,
-) => {
-  console.log('Mkdir', path.join(outDir, 'models'));
-  fs.mkdirSync(path.join(outDir, 'models'), { recursive: true });
-
-  // TODO: build a tree instead, could then be parallelized
-  // TODO: type assertion
-  const openSet: [string, JsonSchema][] = [...Object.entries(schemas)] as [string, JsonSchema][];
-  for (const [key, schema] of openSet) {
-    schema['title'] ??= key;
-  }
-
-  writeSourceFile(
-    `${outDir}/models/_oneOf.ts`,
-    fs.readFileSync(new URL(import.meta.resolve('./clientLib/_oneOf.ts')), 'utf-8'),
-  );
-  writeSourceFile(
-    `${outDir}/HTTPStatusCode.ts`,
-    fs.readFileSync(new URL(import.meta.resolve('./clientLib/HTTPStatusCode.ts')), 'utf-8'),
-  );
-
-  while (openSet.length > 0) {
-    let progressed = false;
-    const errors: Error[] = [];
-
-    // iterate backward to not invalidate indices when removing last
-    for (let i = openSet.length - 1; i >= 0; i--) {
-      const [key, schema] = openSet[i];
-      try {
-        const destFile = `${outDir}/models/${key}.ts`;
-        writeSourceFile(destFile, schema2typebox(schema, key));
-
-        addReference(`#/components/schemas/${key}`, {
-          name: key,
-          sourceFile: destFile,
-        });
-        progressed = true;
-
-        // remove processed item
-        openSet.splice(i, 1);
-      } catch (e) {
-        if (e instanceof MissingReferenceError) {
-          errors.push(e);
-          // hope reference will resolve in a later iteration
-          continue;
-        }
-        console.error('Unknown error', e);
-        process.exit(1);
-      }
-    }
-
-    if (!progressed) {
-      console.error(
-        'Failed to resolve all references for',
-        openSet.map(([key]) => key),
-      );
-      for (const e of errors) {
-        console.error(e.message);
-      }
-      console.log(knownReferences);
-      process.exit(1);
-    }
-  }
-
-  generateComponentIndex(schemas, outDir);
-};
-
-const processPaths = (paths: Required<OpenApiSpec>['paths'], outDir: string) => {
+): ReturnType<typeof operationToFunction>[] => {
   console.log('Mkdir', path.join(outDir, 'functions'));
   fs.mkdirSync(path.join(outDir, 'functions'), { recursive: true });
 
@@ -109,7 +25,7 @@ const processPaths = (paths: Required<OpenApiSpec>['paths'], outDir: string) => 
     );
   }
 
-  const functions: Awaited<ReturnType<typeof operationToFunction>>[] = [];
+  const functions: ReturnType<typeof operationToFunction>[] = [];
 
   for (const [route, pathItem] of Object.entries(paths)) {
     for (const method of Object.values(OpenApiMethods)) {
@@ -122,7 +38,7 @@ const processPaths = (paths: Required<OpenApiSpec>['paths'], outDir: string) => 
     }
   }
 
-  buildClient(functions, outDir);
+  return functions;
 };
 
 const buildClient = (
@@ -145,7 +61,9 @@ const buildClient = (
     ),
     '',
 
-    'const buildClient = (baseConfig?: GlobalConfig) => {',
+    'const buildClient = (baseConfig?: GlobalConfig): {',
+    functions.map(({ operationName }) => `  ${operationName}: typeof ${operationName}; `),
+    '} => {',
     '  if (baseConfig == null) {',
     `    return ({ ${functions.map(({ operationName }) => operationName).join(', ')} });`,
     '  }',
@@ -283,9 +201,14 @@ const openapiToApiClient = async (specPath: string, outDir: string) => {
   //fs.rmSync(outPath, { recursive: true, force: true });
   fs.mkdirSync(outPath, { recursive: true });
 
-  spec.components?.schemas != null && processComponentSchemas(spec.components.schemas, outPath);
+  if (spec.components?.schemas != null) {
+    processComponentSchemas(spec.components.schemas, outPath);
+  }
 
-  spec.paths != null && processPaths(spec.paths, outPath);
+  if (spec.paths != null) {
+    const functions = processPaths(spec.paths, outPath);
+    buildClient(functions, outDir);
+  }
 
   if (configuration.package) {
     generatePackage(spec.info.version, outPath);

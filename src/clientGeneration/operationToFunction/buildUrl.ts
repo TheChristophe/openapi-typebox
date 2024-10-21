@@ -1,6 +1,6 @@
-import type Parameter from '../openapi/Parameter.js';
+import type Parameter from '../../openapi/Parameter.js';
 import substituteParams from './helpers/substituteParams.js';
-import template from '../templater.js';
+import template from '../../templater.js';
 
 const buildUrl = (route: string, parameters: Parameter[]) =>
   template.concat(
