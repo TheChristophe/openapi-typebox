@@ -11,7 +11,7 @@ const cli = meow(
   Options
     --output, -o Output folder, default to "./client"
     --package Generate a package.json
-    --packageName Package name for the package.json
+    --package-name Package name for the package.json
 
   Examples
     $ openapi-box ./openapi.json

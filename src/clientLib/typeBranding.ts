@@ -1,5 +1,11 @@
-declare const SuccessBrand: unique symbol;
-declare const ErrorBrand: unique symbol;
+/**
+ * @internal
+ */
+export declare const SuccessBrand: unique symbol;
+/**
+ * @internal
+ */
+export declare const ErrorBrand: unique symbol;
 
 /**
  * This brands the types of the API success and error responses into the return type from the api function.

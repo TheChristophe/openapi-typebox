@@ -63,8 +63,11 @@ const operationToFunction = (
     refUnsupported(requestBody);
   }
 
-  lines.push("import type ClientConfig from '../ClientConfig.js';");
+  lines.push("import { type ConfigOverrides } from '../clientConfig.js';");
   lines.push("import { type ResponseBrand } from '../typeBranding.js';");
+  lines.push(
+    "import { HTTPInformational, HTTPSuccess, HTTPRedirection, HTTPClientError, HTTPServerError } from '../HTTPStatusCode.js';",
+  );
   configuration.throwOnError && lines.push("import ApiError from '../ApiError.js';");
 
   const parameterTypeName = `${uppercaseFirst(operationName)}Parameters`;
@@ -97,91 +100,105 @@ const operationToFunction = (
   lines.push(
     template.lines(
       template.concat(
-        `const _${operationName} = async (`,
+        'const operation = async (',
         anyParams && `parameters: ${parameterTypeName},`,
-        'config?: ClientConfig)',
-        configuration.throwOnError
-          ? successType && `: Promise<${successType}>`
-          : template.concat(
-              (successType || errorType) && ':',
-              successType && `| ${successType}`,
-              errorType && `| ${errorType}`,
-            ),
+        'config?: ConfigOverrides)',
+        template.concat(
+          (successType || errorType) && ': Promise<',
+          successType && `| ${successType}`,
+          errorType && `| ${errorType}`,
+          (successType || errorType) && '>',
+        ),
         ' => {',
       ),
 
-      destructureParameters(parameters, requestBody),
+      template.lines(
+        destructureParameters(parameters, requestBody),
 
-      buildUrl(route, parameters),
+        buildUrl(route, parameters),
 
-      'const localFetch = config?.fetch ?? fetch;',
-      'const headers = new Headers(config?.defaultParams?.headers);',
-      '',
-      'if (config?.auth?.bearer != null) {',
-      // eslint-disable-next-line no-template-curly-in-string
-      "  headers.set('authorization', `Bearer ${config.auth.bearer}`);",
-      '}',
-      '',
-
-      'const response = await localFetch(',
-
-      template.concat(
+        'const localFetch = config?.fetch ?? fetch;',
+        'const headers = new Headers(config?.defaultParams?.headers);',
+        '',
+        'if (config?.auth?.bearer != null) {',
         // eslint-disable-next-line no-template-curly-in-string
-        '`${url}',
+        "  headers.set('authorization', `Bearer ${config.auth.bearer}`);",
+        '}',
+        '',
 
-        queryParams.length > 0 && [
-          '?${new URLSearchParams({',
+        'const response = await localFetch(',
 
-          queryParams.map(
-            (param) =>
-              `...(${sanitizeVariableName(param.name)} != null && {["${param.name}"]: ${sanitizeVariableName(param.name)}.toString()}),`,
-          ),
-          '}).toString()}',
-        ],
+        template.concat(
+          // eslint-disable-next-line no-template-curly-in-string
+          '`${url}',
 
-        '`,',
+          queryParams.length > 0 && [
+            '?${new URLSearchParams({',
+
+            queryParams.map(
+              (param) =>
+                `...(${sanitizeVariableName(param.name)} != null && {["${param.name}"]: ${sanitizeVariableName(param.name)}.toString()}),`,
+            ),
+            '}).toString()}',
+          ],
+
+          '`,',
+        ),
+
+        '{',
+        '...config?.defaultParams,',
+        `method: '${method.toUpperCase()}',`,
+        'headers,',
+
+        // TODO: non-json
+        // TODO: how to handle multiple different request types?
+        requestBody && 'body: JSON.stringify(body),',
+
+        // TODO: headers
+
+        '});',
+        '',
+
+        operation.responses == null &&
+          template.lines('return ({', 'status: response.status,', `} as ${errorType});`),
+
+        operation.responses != null &&
+          template.lines(buildResponseReturn(operationName, operation.responses)),
       ),
+      '};',
 
-      '{',
-      '...config?.defaultParams,',
-      `method: '${method.toUpperCase()}',`,
-      'headers,',
-
-      // TODO: non-json
-      // TODO: how to handle multiple different request types?
-      requestBody && 'body: JSON.stringify(body),',
-
-      // TODO: headers
-
-      '});',
+      '',
+      'const allow = <Y extends number = HTTPSuccess> (yes: Y[]) => ',
+      '  async (...args: Parameters<typeof operation>) => {',
+      '    const result = await operation(...args);',
+      '    if (!(yes as number[]).includes(result.status)) {',
+      '      throw new ApiError(result);',
+      '    }',
+      // TODO: is there any way to do this type-safely?
+      '    return result as Allow<Y>;',
+      '  };',
+      '',
+      `const throwing = async (...args: Parameters<typeof operation>) ${successType && `: Promise<${successType}>`} => {`,
+      '  const result = await operation(...args);',
+      '  if (!result.response.ok) {',
+      '    throw new ApiError(result);',
+      '  }',
+      `  return result as ${successType};`,
+      '};',
       '',
 
-      operation.responses == null &&
-        template.lines('return ({', 'status: response.status,', `} as ${errorType});`),
-
-      operation.responses != null &&
-        template.lines(
-          template.concat(
-            'let ret:',
-            successType && ` | { good: true; value: ${successType} }`,
-            errorType && ` | { good: false; value: ${errorType} }`,
-            ';',
+      configuration.throwOnError
+        ? template.lines(
+            `const _${operationName} = throwing as typeof throwing & { nonThrowing: typeof operation; allow: typeof allow; };`,
+            `_${operationName}.nonThrowing = operation;`,
+            `_${operationName}.allow = allow;`,
+          )
+        : template.lines(
+            `const _${operationName} = operation as typeof operation & { throwing: typeof throwing; allow: typeof allow; };`,
+            `_${operationName}.throwing = throwing;`,
+            `_${operationName}.allow = allow;`,
           ),
 
-          buildResponseReturn(operationName, operation.responses),
-          '',
-          configuration.throwOnError &&
-            template.lines(
-              '// typescript bug',
-              '// eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare',
-              'if (ret.good === false) {',
-              `  return Promise.reject(new ApiError<${errorType}>(ret.value));`,
-              '}',
-            ),
-
-          'return ret.value;',
-        ),
-      '};',
       ' ',
       `const ${operationName} = _${operationName} as ResponseBrand<typeof _${operationName}, ${successType || 'void'}, ${errorType || 'never'}>;`,
       ' ',

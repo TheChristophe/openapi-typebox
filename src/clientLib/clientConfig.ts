@@ -1,15 +1,31 @@
 type FetchParameters = Exclude<Parameters<typeof fetch>[1], 'method' | 'body'>;
 
-type ClientConfig = {
+export type GlobalConfig = {
+  /**
+   * Host + base path for the API
+   */
   basePath?: string;
+  /**
+   * Authentication methods
+   */
   auth?: {
+    /**
+     * Bearer token (for example OAuth2)
+     */
     bearer?: string;
   };
+  /**
+   * Fetch function override
+   */
   fetch?: typeof fetch;
+  /**
+   * Default fetch parameters
+   */
   defaultParams?: FetchParameters;
 };
+export type ConfigOverrides = GlobalConfig;
 
-export const mergeConfigs = (first?: ClientConfig, second?: ClientConfig): ClientConfig => {
+export const mergeConfigs = (first?: GlobalConfig, second?: ConfigOverrides): ConfigOverrides => {
   const { headers: h1, ...rest } = first?.defaultParams ?? {};
   const { headers: h2, ...rest2 } = second?.defaultParams ?? {};
 
@@ -20,7 +36,7 @@ export const mergeConfigs = (first?: ClientConfig, second?: ClientConfig): Clien
     headers.set(key, value);
   }
 
-  const target: ClientConfig = {
+  const target: ConfigOverrides = {
     basePath: second?.basePath ?? first?.basePath,
     auth: second?.auth ?? first?.auth,
     fetch: second?.fetch ?? first?.fetch,
@@ -32,5 +48,3 @@ export const mergeConfigs = (first?: ClientConfig, second?: ClientConfig): Clien
 
   return target;
 };
-
-export default ClientConfig;
