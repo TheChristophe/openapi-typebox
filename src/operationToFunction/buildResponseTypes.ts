@@ -4,6 +4,7 @@ import refUnsupported from './helpers/refUnsupported.js';
 import { collect } from '../schema2typebox/index.js';
 import template from '../templater.js';
 import { uppercaseFirst } from './helpers/stringManipulation.js';
+import { SUCCESS_CODES } from '../clientLib/HTTPStatusCode.js';
 
 const buildResponseTypes = (
   operationName: string,
@@ -42,43 +43,44 @@ const buildResponseTypes = (
     }
   }
 
-  const successResponse = `${uppercaseFirst(operationName)}ResponseGood`;
-  lines.push(
-    '',
-    template.lines(
-      `type ${successResponse} =`,
-      '{ response: Response; } & (',
-      types
-        .filter(({ responseCode }) => {
-          const numeric = +responseCode;
-          return !Number.isNaN(numeric) && numeric >= 200 && numeric < 400;
-        })
-        .map(({ typename, responseCode }) =>
-          template.concat(`| { status: ${responseCode};`, typename && `data: ${typename};`, '}'),
-        ),
-      ');',
-    ),
-  );
+  const successResponse = `${uppercaseFirst(operationName)}ResponseOk`;
   const errorResponse = `${uppercaseFirst(operationName)}ResponseBad`;
+
   lines.push(
     '',
+    // TODO: make status not -1, but undefined and null break Extract<>
+    'type ResponseUnknown = { response: Response; status: -1; };',
+
     template.lines(
-      `type ${errorResponse} =`,
-      '{ response: Response; } & (',
-      types
-        .filter(({ responseCode }) => {
-          const numeric = +responseCode;
-          return !Number.isNaN(numeric) && numeric >= 400;
-        })
-        .map(({ typename, responseCode }) =>
-          template.concat(
-            `| { status: ${responseCode}; response: Response;`,
-            typename && `data: ${typename};`,
-            '}',
-          ),
+      types.map(({ typename, responseCode }) =>
+        template.concat(
+          `type Response${responseCode} = {`,
+          'response: Response;',
+          `status: ${responseCode};`,
+          typename && `data: ${typename};`,
+          '};',
         ),
-      '| { status: undefined; }',
-      ');',
+      ),
+
+      `type ${successResponse} =`,
+      types
+        .filter(({ responseCode }) => (SUCCESS_CODES as number[]).includes(+responseCode))
+        .map(({ responseCode }) => `| Response${responseCode}`),
+      ';',
+      `type ${errorResponse} =`,
+      types
+        .filter(({ responseCode }) => !(SUCCESS_CODES as number[]).includes(+responseCode))
+        .map(({ responseCode }) => `| Response${responseCode}`),
+      ' | ResponseUnknown',
+      ';',
+
+      'type Allow<Allowed extends number> =',
+      types.map(
+        ({ responseCode }) =>
+          `| (${responseCode} extends Allowed ? Response${responseCode} : never)`,
+      ),
+      '| (-1 extends Allowed ? ResponseUnknown : never)',
+      ';',
     ),
   );
 

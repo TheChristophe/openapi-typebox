@@ -46,6 +46,10 @@ const processComponentSchemas = (
     `${outDir}/models/_oneOf.ts`,
     fs.readFileSync(new URL(import.meta.resolve('./clientLib/_oneOf.ts')), 'utf-8'),
   );
+  writeSourceFile(
+    `${outDir}/HTTPStatusCode.ts`,
+    fs.readFileSync(new URL(import.meta.resolve('./clientLib/HTTPStatusCode.ts')), 'utf-8'),
+  );
 
   while (openSet.length > 0) {
     let progressed = false;
@@ -97,7 +101,7 @@ const processPaths = (paths: Required<OpenApiSpec>['paths'], outDir: string) => 
   console.log('Mkdir', path.join(outDir, 'functions'));
   fs.mkdirSync(path.join(outDir, 'functions'), { recursive: true });
 
-  const sharedFiles = ['ClientConfig.ts', 'ApiError.ts', 'typeBranding.ts'];
+  const sharedFiles = ['clientConfig.ts', 'ApiError.ts', 'typeBranding.ts'];
   for (const file of sharedFiles) {
     writeSourceFile(
       `${outDir}/${file}`,
@@ -135,14 +139,13 @@ const buildClient = (
     return 0;
   });
   const source = template.lines(
-    "import type ClientConfig from './ClientConfig.js';",
-    "import { mergeConfigs } from './ClientConfig.js';",
+    "import { mergeConfigs, type GlobalConfig, type ConfigOverrides } from './clientConfig.js';",
     functions.map(
       ({ operationName, importPath }) => `import ${operationName} from '${importPath}';`,
     ),
     '',
 
-    'const buildClient = (baseConfig?: ClientConfig) => {',
+    'const buildClient = (baseConfig?: GlobalConfig) => {',
     '  if (baseConfig == null) {',
     `    return ({ ${functions.map(({ operationName }) => operationName).join(', ')} });`,
     '  }',
@@ -150,8 +153,8 @@ const buildClient = (
     '  return ({',
     functions.map(({ operationName, hasParams }) =>
       hasParams
-        ? `${operationName}: ((params: Parameters<typeof ${operationName}>[0], config?: ClientConfig) => ${operationName}(params, mergeConfigs(baseConfig, config))) as typeof ${operationName},`
-        : `${operationName}: ((config?: ClientConfig) => ${operationName}(mergeConfigs(baseConfig, config))) as typeof ${operationName},`,
+        ? `${operationName}: ((params: Parameters<typeof ${operationName}>[0], config?: ConfigOverrides) => ${operationName}(params, mergeConfigs(baseConfig, config))) as typeof ${operationName},`
+        : `${operationName}: ((config?: ConfigOverrides) => ${operationName}(mergeConfigs(baseConfig, config))) as typeof ${operationName},`,
     ),
     '  });',
     '};',
@@ -198,7 +201,7 @@ const generatePackage = (version: string, outDir: string) => {
         },
         dependencies: {
           // TODO: find a good way to keep these updated
-          '@sinclair/typebox': '^0.32',
+          '@sinclair/typebox': '^0.33',
         },
         devDependencies: {
           // TODO: find a good way to keep these updated

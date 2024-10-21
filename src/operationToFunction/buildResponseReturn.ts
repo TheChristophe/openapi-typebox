@@ -13,22 +13,8 @@ const buildResponseReturn = (operationName: string, responses: Responses): strin
 
     lines.push(template.lines(`case ${statusCode}:`));
 
-    const numericStatus = +statusCode;
-    const isGood = !Number.isNaN(numericStatus) && numericStatus >= 200 && numericStatus < 300;
-
     if (!response.content) {
-      lines.push(
-        template.lines(
-          'ret = ({',
-          `  good: ${isGood.toString()},`,
-          '  value: {',
-          `    status: ${statusCode},`,
-          '    response,',
-          '  },',
-          '});',
-          'break;',
-        ),
-      );
+      lines.push(template.lines('return {', `  status: ${statusCode},`, '  response,', '};'));
       continue;
     }
 
@@ -39,44 +25,28 @@ const buildResponseReturn = (operationName: string, responses: Responses): strin
     if (responseSchema === undefined) {
       lines.push(
         template.lines(
-          'ret = ({',
-          `  good: ${isGood.toString()},`,
-          '  value: {',
-          `    status: ${statusCode},`,
-          `    data: await response.blob() as ${responseName},`,
-          '    response,',
-          '  }' + '});',
-          'break;',
+          'return {',
+          `  status: ${statusCode},`,
+          `  data: await response.blob() as ${responseName},`,
+          '  response,',
+          '};',
         ),
       );
     } else {
       lines.push(
         template.lines(
-          'ret = ({',
-          `  good: ${isGood.toString()},`,
-          '  value: {',
-          `   status: ${statusCode},`,
-          `   data: await response.json() as ${responseName},`,
-          '   response,',
-          '  }',
-          '});',
-          'break;',
+          'return {',
+          `  status: ${statusCode},`,
+          `  data: await response.json() as ${responseName},`,
+          '  response,',
+          '};',
         ),
       );
     }
   }
 
   lines.push(
-    template.lines(
-      'default:',
-      'ret = ({',
-      '  good: false,',
-      '  value: {',
-      '    status: undefined,',
-      '    response,',
-      '  }',
-      '});',
-    ),
+    template.lines('default:', 'return {', '  status: -1,', '  response,', '} as ResponseUnknown;'),
   );
 
   lines.push('};');
