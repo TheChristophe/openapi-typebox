@@ -3,12 +3,10 @@
 node_modules/
 
 *.tsbuildinfo
-*.js
 yarn-error.log
 
 # test files
 schema.json
 schema.yaml
 client/
-
 dist/

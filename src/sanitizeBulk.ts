@@ -6,7 +6,7 @@ import url from 'node:url';
 
 const eslint = new ESLint({
   fix: true,
-  overrideConfigFile: url.fileURLToPath(new URL(import.meta.resolve('../.eslintrc.json'))),
+  overrideConfigFile: url.fileURLToPath(new URL(import.meta.resolve('../eslint.config.js'))),
 });
 const prettierConfigPath = await prettier.resolveConfigFile();
 const prettierConfig = (prettierConfigPath &&
@@ -41,7 +41,10 @@ const sanitizeBulk = async (clientDir: string) => {
         if (error.fix !== undefined || error.severity !== 2) {
           continue;
         }
-        console.warn(JSON.stringify(error));
+        console.warn(
+          `${error.line.toString()}: ${error.ruleId?.toString() ?? 'unknown'}: ${error.message}`,
+        );
+        //console.warn(JSON.stringify(error));
       }
     }
     process.exit(1);

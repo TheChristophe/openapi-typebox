@@ -17,7 +17,7 @@ const processPaths = (
   console.log('Mkdir', path.join(outDir, 'functions'));
   fs.mkdirSync(path.join(outDir, 'functions'), { recursive: true });
 
-  const sharedFiles = ['clientConfig.ts', 'ApiError.ts', 'typeBranding.ts'];
+  const sharedFiles = ['clientConfig.ts', 'ApiError.ts', 'apiFunction.ts'];
   for (const file of sharedFiles) {
     writeSourceFile(
       `${outDir}/${file}`,
@@ -71,8 +71,8 @@ const buildClient = (
     '  return ({',
     functions.map(({ operationName, hasParams }) =>
       hasParams
-        ? `${operationName}: ((params: Parameters<typeof ${operationName}>[0], config?: ConfigOverrides) => ${operationName}(params, mergeConfigs(baseConfig, config))) as typeof ${operationName},`
-        : `${operationName}: ((config?: ConfigOverrides) => ${operationName}(mergeConfigs(baseConfig, config))) as typeof ${operationName},`,
+        ? `${operationName}: ((args: Parameters<typeof ${operationName}>[0]) => ${operationName}({ ...args, config: mergeConfigs(baseConfig, args.config) })) as typeof ${operationName},`
+        : `${operationName}: ((args: Parameters<typeof ${operationName}>[0] = {}) => ${operationName}({ config: mergeConfigs(baseConfig, args?.config) })) as typeof ${operationName},`,
     ),
     '  });',
     '};',

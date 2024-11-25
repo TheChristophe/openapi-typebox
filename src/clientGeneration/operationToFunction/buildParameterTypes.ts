@@ -51,8 +51,13 @@ const buildParameterTypes = (
   return {
     code: template.lines(
       `const ${typeName} = Type.Object({`,
-      parameterSlices.map(({ code }) => `${code},`),
       bodyParameter !== undefined && bodyParameter.code,
+      parameterSlices.length > 0 &&
+        template.concat(
+          'params: Type.Object({',
+          parameterSlices.map(({ code }) => `${code},`),
+          '}),',
+        ),
       '});',
       `type ${typeName} = Static<typeof ${typeName}>;`,
     ),

@@ -18,7 +18,7 @@ const generateComponentIndex: (...args: Parameters<typeof processComponentSchema
       ...Object.entries(schemas)
         .filter(([, schema]) => schema !== undefined)
         .sort(([key1], [key2]) => (key1 < key2 ? -1 : key1 > key2 ? 1 : 0))
-        .map(([key]) => `export { ${key}Schema, default as ${key} } from './${key}.js';`),
+        .map(([key]) => `export { ${key}Schema, type default as ${key} } from './${key}.js';`),
     ),
   );
 };

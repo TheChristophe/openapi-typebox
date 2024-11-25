@@ -1,9 +1,8 @@
 import template from '../../templater.js';
 import type Responses from '../../openapi/Responses.js';
 import refUnsupported from './helpers/refUnsupported.js';
-import { uppercaseFirst } from './helpers/stringManipulation.js';
 
-const buildResponseReturn = (operationName: string, responses: Responses): string => {
+const buildResponseReturn = (operationName: string, responses: Responses) => {
   const lines: string[] = [];
 
   lines.push('switch (response.status) {');
@@ -18,7 +17,7 @@ const buildResponseReturn = (operationName: string, responses: Responses): strin
       continue;
     }
 
-    const responseName = `${uppercaseFirst(operationName)}${statusCode}`;
+    const responseName = `Response${statusCode}`;
 
     const responseSchema = response.content['application/json'];
     // json unsupported
@@ -45,13 +44,11 @@ const buildResponseReturn = (operationName: string, responses: Responses): strin
     }
   }
 
-  lines.push(
-    template.lines('default:', 'return {', '  status: -1,', '  response,', '} as ResponseUnknown;'),
-  );
+  lines.push(template.lines('default:', 'return {', '  status: -1,', '  response,', '};'));
 
   lines.push('};');
 
-  return lines.join('\n');
+  return lines;
 };
 
 export default buildResponseReturn;

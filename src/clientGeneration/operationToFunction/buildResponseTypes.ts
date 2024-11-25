@@ -3,7 +3,6 @@ import { type CodegenSlice } from '../../schema2typebox/joinBatch.js';
 import refUnsupported from './helpers/refUnsupported.js';
 import { collect } from '../../schema2typebox/index.js';
 import template from '../../templater.js';
-import { uppercaseFirst } from './helpers/stringManipulation.js';
 import { SUCCESS_CODES } from '../clientLib/HTTPStatusCode.js';
 
 const buildResponseTypes = (
@@ -17,7 +16,7 @@ const buildResponseTypes = (
   for (const [statusCode, response] of Object.entries(responses)) {
     refUnsupported(response);
 
-    const responseName = `${uppercaseFirst(operationName)}${statusCode}`;
+    const responseName = `Response${statusCode}`;
     if (!response.content) {
       //lines.push(`type ${responseName} = unknown;`);
       types.push({ typename: undefined /*responseName*/, responseCode: statusCode });
@@ -39,43 +38,48 @@ const buildResponseTypes = (
         ),
       );
       types.push({ typename: responseName, responseCode: statusCode });
-      schema?.extraImports && extraImports.push(...schema.extraImports);
+      if (schema?.extraImports) {
+        extraImports.push(...schema.extraImports);
+      }
     }
   }
 
-  const successResponse = `${uppercaseFirst(operationName)}ResponseOk`;
-  const errorResponse = `${uppercaseFirst(operationName)}ResponseBad`;
+  const successResponse = 'ResponseOk';
+  const errorResponse = 'ResponseBad';
 
   lines.push(
-    '',
-    // TODO: make status not -1, but undefined and null break Extract<>
-    'type ResponseUnknown = { response: Response; status: -1; };',
-
     template.lines(
-      types.map(({ typename, responseCode }) =>
-        template.lines(
-          `type Response${responseCode} = {`,
-          '  response: Response;',
-          `  status: ${responseCode};`,
-          typename && `  data: ${typename};`,
-          '};',
-          ' ',
-        ),
-      ),
-
+      '',
       `type ${successResponse} =`,
       types
         .filter(({ responseCode }) => (SUCCESS_CODES as number[]).includes(+responseCode))
-        .map(({ responseCode }) => `| Response${responseCode}`),
+        .map(({ responseCode, typename }) =>
+          template.concat(
+            '| {',
+            ' response: Response;',
+            ` status: ${responseCode};`,
+            typename && ` data: ${typename};`,
+            ' }',
+          ),
+        ),
       ';',
       `type ${errorResponse} =`,
       types
         .filter(({ responseCode }) => !(SUCCESS_CODES as number[]).includes(+responseCode))
-        .map(({ responseCode }) => `| Response${responseCode}`),
-      ' | ResponseUnknown',
+        .map(({ responseCode, typename }) =>
+          template.concat(
+            '| {',
+            ' response: Response;',
+            ` status: ${responseCode};`,
+            typename && ` data: ${typename};`,
+            ' }',
+          ),
+        ),
+      ' | { response: Response; status: -1; }',
       ';',
 
-      `type AllResponses = ${successResponse} | ${errorResponse} | ResponseUnknown;`,
+      `type AllResponses = ${successResponse} | ${errorResponse};`,
+      '',
     ),
   );
 

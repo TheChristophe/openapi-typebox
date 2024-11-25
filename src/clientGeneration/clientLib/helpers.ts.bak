@@ -1,0 +1,29 @@
+import ApiError from './ApiError.js';
+import { HTTPSuccess } from './HTTPStatusCode.js';
+import { ApiFunction } from './apiFunction.js';
+
+// using unknown works in this project, but gives nonsensical errors in another project
+// using any instead
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+export const allow =
+  <Y extends number, F extends ApiFunction<any, { status: number }>>(yes: Y[], fn: F) =>
+  async (arg: Parameters<typeof fn>[0]) => {
+    const result = await fn(arg);
+    if (!(yes as number[]).includes(result.status)) {
+      throw new ApiError(result);
+    }
+    return result as Extract<Awaited<ReturnType<F>>, { status: Y }>;
+  };
+
+export const throwing =
+  <F extends ApiFunction<any, { status: number; response: Response }>>(fn: F) =>
+  async (arg: Parameters<typeof fn>[0]) => {
+    const result = await fn(arg);
+    if (!result.response.ok) {
+      throw new ApiError(result);
+    }
+    return result as Extract<Awaited<ReturnType<F>>, { status: HTTPSuccess }>;
+  };
+
+/* eslint-enable @typescript-eslint/no-explicit-any */
