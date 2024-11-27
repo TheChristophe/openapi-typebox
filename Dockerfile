@@ -1,13 +1,15 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
-COPY [".yarn", ".yarn"]
-COPY ["src", "src"]
-COPY [".eslintrc.json", ".prettierrc", ".yarnrc.yml", "package.json", "tsconfig.build.json", "tsconfig.json", "yarn.lock", "/entrypoint.sh", "./"]
+COPY ["package.json", "./"]
+RUN corepack enable
 
-RUN yarn install
-RUN yarn build
+COPY ["src", "src"]
+COPY ["eslint.config.js", ".prettierrc", "tsconfig.build.json", "tsconfig.json", "pnpm-lock.yaml", "/entrypoint.sh", "./"]
+
+RUN pnpm install
+RUN pnpm build
 
 RUN chmod +x /app/entrypoint.sh
 
