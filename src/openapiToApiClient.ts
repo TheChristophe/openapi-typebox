@@ -101,7 +101,7 @@ const generatePackage = (version: string, outDir: string) => {
   if (configuration.package.snapshotVersion) {
     const now = new Date();
     const f = (n: number, length: number = 2) => n.toString().padStart(length, '0');
-    const timestamp = `${f(now.getFullYear(), 4)}${f(now.getMonth())}${f(now.getDay())}T${f(now.getUTCHours())}${f(now.getUTCMinutes())}${f(now.getUTCSeconds())}Z`;
+    const timestamp = `${f(now.getFullYear(), 4)}${f(now.getMonth() + 1)}${f(now.getDate())}T${f(now.getUTCHours())}${f(now.getUTCMinutes())}${f(now.getUTCSeconds())}Z`;
     if (ver.includes('-')) {
       // pre-release, append timestamp
       ver = `${ver}.${timestamp}`;
