@@ -11,7 +11,10 @@ const cli = meow(
   Options
     --output, -o Output folder, default to "./client"
     --package Generate a package.json
-    --package-name Package name for the package.json
+    --package-name Package name
+    --package-registry Registry to publish to
+    --package-author Package author
+    --snapshot-version Append timestamp to package version
 
   Examples
     $ openapi-box ./openapi.json
