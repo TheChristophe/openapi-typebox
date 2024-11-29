@@ -2,13 +2,5 @@
   "$schema": "https://json.schemastore.org/prettierrc",
   "tabWidth": 2,
   "singleQuote": true,
-  "printWidth": 100,
-  "overrides": [
-    {
-      "files": ["*.js", "*.ts", "*.mjs"],
-      "options": {
-        "parser": "babel-ts"
-      }
-    }
-  ]
+  "printWidth": 100
 }

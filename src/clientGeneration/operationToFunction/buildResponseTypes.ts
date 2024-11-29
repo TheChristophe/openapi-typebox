@@ -1,14 +1,17 @@
 import type Responses from '../../openapi/Responses.js';
-import { type CodegenSlice } from '../../schema2typebox/joinBatch.js';
-import refUnsupported from './helpers/refUnsupported.js';
 import { collect } from '../../schema2typebox/index.js';
+import typeboxImportStatements from '../../schema2typebox/typeboxImportStatements.js';
 import template from '../../templater.js';
+import writeSourceFile from '../../writeSourceFile.js';
 import { SUCCESS_CODES } from '../clientLib/HTTPStatusCode.js';
+import refUnsupported from './helpers/refUnsupported.js';
 
 const buildResponseTypes = (
-  operationName: string,
+  outFile: string,
+  responseTypeName: string,
+  errorResponseTypeName: string,
   responses: Responses,
-): CodegenSlice & { successResponse: string; errorResponse: string } => {
+) => {
   const lines: string[] = [];
   const extraImports: string[] = [];
   const types: { typename?: string; responseCode: string }[] = [];
@@ -18,7 +21,6 @@ const buildResponseTypes = (
 
     const responseName = `Response${statusCode}`;
     if (!response.content) {
-      //lines.push(`type ${responseName} = unknown;`);
       types.push({ typename: undefined /*responseName*/, responseCode: statusCode });
       continue;
     }
@@ -34,7 +36,8 @@ const buildResponseTypes = (
       lines.push(
         template.lines(
           `const ${responseName} = ${code};`,
-          `type ${responseName} = Static<typeof ${responseName}>;`,
+          `export type ${responseName} = Static<typeof ${responseName}>;`,
+          '',
         ),
       );
       types.push({ typename: responseName, responseCode: statusCode });
@@ -45,11 +48,10 @@ const buildResponseTypes = (
   }
 
   const successResponse = 'ResponseOk';
-  const errorResponse = 'ResponseBad';
+  const errorResponse = errorResponseTypeName;
 
   lines.push(
     template.lines(
-      '',
       `type ${successResponse} =`,
       types
         .filter(({ responseCode }) => (SUCCESS_CODES as number[]).includes(+responseCode))
@@ -77,18 +79,20 @@ const buildResponseTypes = (
         ),
       ' | { response: Response; status: -1; }',
       ';',
-
-      `type AllResponses = ${successResponse} | ${errorResponse};`,
       '',
+
+      `type ${responseTypeName} = ${successResponse} | ${errorResponse};`,
+      '',
+      `export default ${responseTypeName};`,
     ),
   );
 
-  return {
-    code: lines.join('\n'),
-    extraImports,
-    successResponse,
-    errorResponse,
-  };
+  writeSourceFile(
+    outFile,
+    template.lines(typeboxImportStatements(true), ...extraImports, '', ...lines),
+  );
+
+  return { types };
 };
 
 export default buildResponseTypes;

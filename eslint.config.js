@@ -37,15 +37,11 @@ const config = tseslint.config(
 
   ...compat.plugins('import').map(name('plugin:import')),
 
-  ...compat.plugins('github').map(name('plugin:github')),
-
   // must come after github as github seemingly enables awful prettier plugin
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   name('prettier')(prettier),
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
   name('comments/recommended')(comments.recommended),
-
-  ...compat.plugins('prefer-arrow-functions').map(name('plugin:prefer-arrow-functions')),
 
   ...compat.plugins('unused-imports').map(name('plugin:unused-imports')),
 
@@ -80,21 +76,9 @@ const config = tseslint.config(
 
       'import/first': 'error',
       'import/no-absolute-path': 'error',
-      'import/no-duplicates': 'error',
 
       'import/consistent-type-specifier-style': ['error', 'prefer-inline'],
       'import/prefer-default-export': ['warn'],
-
-      'prefer-arrow-functions/prefer-arrow-functions': [
-        'warn',
-        {
-          allowNamedFunctions: false,
-          classPropertiesAllowed: false,
-          disallowPrototype: false,
-          returnStyle: 'unchanged',
-          singleReturnOnly: false,
-        },
-      ],
 
       // vs plugin:@typescript-eslint/strict-type-checked
       '@typescript-eslint/no-confusing-void-expression': 'off', // inconvenient
@@ -110,6 +94,9 @@ const config = tseslint.config(
       '@typescript-eslint/consistent-type-imports': 'off',
       // broken?
       '@typescript-eslint/no-unnecessary-condition': 'off',
+
+      // slow:
+      'import/no-duplicates': 'off',
     },
   },
 );

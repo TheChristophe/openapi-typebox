@@ -124,7 +124,7 @@ export const schema2typebox = (jsonSchema: JSONSchema7Definition, name?: string)
   const exportType = uppercaseFirst(exportedName);
 
   return template.lines(
-    typeboxImportStatements,
+    typeboxImportStatements(),
 
     schema.extraImports && schema.extraImports.join('\n'),
     schema.code.includes('OneOf([') && "import OneOf from './_oneOf.ts';",

@@ -1,8 +1,10 @@
 import type Parameter from '../../openapi/Parameter.js';
 import type RequestBody from '../../openapi/RequestBody.js';
-import { type CodegenSlice } from '../../schema2typebox/joinBatch.js';
 import { collect } from '../../schema2typebox/index.js';
+import { type CodegenSlice } from '../../schema2typebox/joinBatch.js';
+import typeboxImportStatements from '../../schema2typebox/typeboxImportStatements.js';
 import template from '../../templater.js';
+import writeSourceFile from '../../writeSourceFile.js';
 
 const generateParameter = (parameter: Parameter): CodegenSlice => {
   const schema = parameter.schema !== undefined ? collect(parameter.schema) : undefined;
@@ -41,15 +43,21 @@ const generateBody = (requestBody: RequestBody): CodegenSlice => {
 };
 
 const buildParameterTypes = (
+  outFile: string,
   typeName: string,
   parameters: Parameter[] = [],
   requestBody?: RequestBody,
-): CodegenSlice => {
+) => {
   const parameterSlices = parameters.map(generateParameter);
   const bodyParameter = requestBody ? generateBody(requestBody) : undefined;
 
-  return {
-    code: template.lines(
+  writeSourceFile(
+    outFile,
+    template.lines(
+      typeboxImportStatements(true),
+      ...parameterSlices.flatMap(({ extraImports }) => extraImports ?? []),
+      ...(bodyParameter?.extraImports ?? []),
+      '',
       `const ${typeName} = Type.Object({`,
       bodyParameter !== undefined && bodyParameter.code,
       parameterSlices.length > 0 &&
@@ -60,12 +68,10 @@ const buildParameterTypes = (
         ),
       '});',
       `type ${typeName} = Static<typeof ${typeName}>;`,
+      '',
+      `export default ${typeName};`,
     ),
-    extraImports: [
-      ...parameterSlices.flatMap(({ extraImports }) => extraImports ?? []),
-      ...(bodyParameter?.extraImports ?? []),
-    ],
-  };
+  );
 };
 
 export default buildParameterTypes;

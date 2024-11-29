@@ -1,21 +1,21 @@
 import type Operation from '../../openapi/Operation.js';
 import type Parameter from '../../openapi/Parameter.js';
 import type Reference from '../../openapi/Reference.js';
-import writeSourceFile from '../../writeSourceFile.js';
 import type RequestBody from '../../openapi/RequestBody.js';
+import writeSourceFile from '../../writeSourceFile.js';
 
-import routeToOperationName from './helpers/routeToOperationName.js';
-import buildParameterTypes from './buildParameterTypes.js';
-import refUnsupported from './helpers/refUnsupported.js';
-import sanitizeVariableName from './helpers/sanitizeVariableName.js';
-import buildUrl from './buildUrl.js';
-import destructureParameters from './destructureParameters.js';
-import buildResponseTypes from './buildResponseTypes.js';
+import configuration from '../../configuration.js';
 import typeboxImportStatements from '../../schema2typebox/typeboxImportStatements.js';
 import template from '../../templater.js';
+import buildParameterTypes from './buildParameterTypes.js';
 import buildResponseReturn from './buildResponseReturn.js';
-import configuration from '../../configuration.js';
+import buildResponseTypes from './buildResponseTypes.js';
+import buildUrl from './buildUrl.js';
+import destructureParameters from './destructureParameters.js';
 import commentSanitize from './helpers/commentSanitize.js';
+import refUnsupported from './helpers/refUnsupported.js';
+import routeToOperationName from './helpers/routeToOperationName.js';
+import sanitizeVariableName from './helpers/sanitizeVariableName.js';
 
 export class InvalidParamError extends Error {}
 
@@ -120,27 +120,29 @@ const operationToFunction = (
   const takesParameters = requestBody != null || parameters.length > 0;
 
   if (takesParameters) {
-    const parameterSection = buildParameterTypes(parameterTypeName, parameters, requestBody);
-    lines.push(parameterSection.code, '');
-    if (parameterSection.extraImports) {
-      imports.push(...parameterSection.extraImports, '');
-    }
+    buildParameterTypes(
+      `${outDir}/functions/${operationName}.parameters.ts`,
+      parameterTypeName,
+      parameters,
+      requestBody,
+    );
+    lines.push(`import type ${parameterTypeName} from './${operationName}.parameters.js';`, '');
   }
 
-  let successType: string = '';
-  let errorType: string = '';
-
+  const responseTypeName = 'ResponseAll';
+  const errorType = 'ResponseBad';
   if (operation.responses && Object.keys(operation.responses).length > 0) {
-    const { successResponse, errorResponse, ...responseSection } = buildResponseTypes(
-      operationName,
+    const { types } = buildResponseTypes(
+      `${outDir}/functions/${operationName}.responses.ts`,
+      responseTypeName,
+      errorType,
       operation.responses,
     );
-    lines.push(responseSection.code, '');
-    if (responseSection.extraImports) {
-      imports.push(...responseSection.extraImports, '');
-    }
-    successType = successResponse;
-    errorType = errorResponse;
+    lines.push(
+      `import type ${responseTypeName} from './${operationName}.responses.js';`,
+      `import { ${types.flatMap(({ typename }) => (typename ? `type ${typename}` : [])).join(', ')} } from './${operationName}.responses.js';`,
+      '',
+    );
   }
 
   const queryParams = parameters.filter((param) => param.in === 'query');
@@ -152,8 +154,8 @@ const operationToFunction = (
         `const ${operationName}: ApiFunction<`,
         takesParameters ? parameterTypeName : 'undefined',
         takesParameters
-          ? ', AllResponses> = async (parameters) => {'
-          : ', AllResponses> = async (parameters = {}) => {',
+          ? `, ${responseTypeName}> = async (parameters) => {`
+          : `, ${responseTypeName}> = async (parameters = {}) => {`,
       ),
 
       template.lines(
@@ -216,7 +218,7 @@ const operationToFunction = (
 
   writeSourceFile(
     `${outDir}/functions/${operationName}.ts`,
-    template.lines(typeboxImportStatements, '', imports, '', lines),
+    template.lines(typeboxImportStatements(), '', ...imports, '', ...lines),
   );
 
   return {

@@ -46,7 +46,7 @@ const buildResponseReturn = (operationName: string, responses: Responses) => {
 
   lines.push(template.lines('default:', 'return {', '  status: -1,', '  response,', '};'));
 
-  lines.push('};');
+  lines.push('}');
 
   return lines;
 };
