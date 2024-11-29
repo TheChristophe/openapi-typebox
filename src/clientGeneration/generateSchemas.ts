@@ -8,7 +8,7 @@ import { schema2typebox } from '../schema2typebox/index.js';
 import { addReference, knownReferences } from '../referenceDictionary.js';
 import MissingReferenceError from '../schema2typebox/MissingReferenceError.js';
 
-const generateComponentIndex: (...args: Parameters<typeof processComponentSchemas>) => void = (
+const generateComponentIndex: (...args: Parameters<typeof processComponentSchemas>) => string[] = (
   schemas,
   outDir,
 ) => {
@@ -21,6 +21,8 @@ const generateComponentIndex: (...args: Parameters<typeof processComponentSchema
         .map(([key]) => `export { ${key}Schema, default as ${key} } from './${key}.js';`),
     ),
   );
+
+  return [`${outDir}/models/index.ts`];
 };
 
 export const processComponentSchemas = (
@@ -29,6 +31,7 @@ export const processComponentSchemas = (
 ) => {
   console.log('Mkdir', path.join(outDir, 'models'));
   fs.mkdirSync(path.join(outDir, 'models'), { recursive: true });
+  const files = [];
 
   // TODO: build a tree instead, could then be parallelized
   // TODO: type assertion
@@ -45,6 +48,7 @@ export const processComponentSchemas = (
     `${outDir}/HTTPStatusCode.ts`,
     fs.readFileSync(new URL(import.meta.resolve('../clientLib/HTTPStatusCode.ts')), 'utf-8'),
   );
+  files.push(`${outDir}/models/_oneOf.ts`, `${outDir}/HTTPStatusCode.ts`);
 
   while (openSet.length > 0) {
     let progressed = false;
@@ -56,6 +60,7 @@ export const processComponentSchemas = (
       try {
         const destFile = `${outDir}/models/${key}.ts`;
         writeSourceFile(destFile, schema2typebox(schema, key));
+        files.push(destFile);
 
         addReference(`#/components/schemas/${key}`, {
           name: key,
@@ -89,5 +94,6 @@ export const processComponentSchemas = (
     }
   }
 
-  generateComponentIndex(schemas, outDir);
+  files.push(...generateComponentIndex(schemas, outDir));
+  return files;
 };

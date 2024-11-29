@@ -1,13 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import * as prettier from 'prettier';
-import { ESLint } from 'eslint';
-import url from 'node:url';
+import * as ts from 'typescript';
 
-const eslint = new ESLint({
-  fix: true,
-  overrideConfigFile: url.fileURLToPath(new URL(import.meta.resolve('../eslint.config.js'))),
-});
 const prettierConfigPath = await prettier.resolveConfigFile();
 const prettierConfig = (prettierConfigPath &&
   (await prettier.resolveConfig(prettierConfigPath))) ?? {
@@ -27,42 +23,65 @@ async function* walk(dir: string): AsyncIterableIterator<string> {
   }
 }
 
-const sanitizeBulk = async (clientDir: string) => {
-  const lintedOutput = await eslint.lintFiles([`${clientDir}/**/*.ts`]);
-  if (lintedOutput.some((output) => output.errorCount - output.fixableErrorCount !== 0)) {
-    console.error('Error while linting files');
-    for (const file of lintedOutput.filter(
-      (output) => output.errorCount - output.fixableErrorCount !== 0,
-    )) {
-      console.warn(
-        `${file.filePath} failed on ${(file.errorCount - file.fixableErrorCount).toString()} counts:`,
+const write = promisify(fs.writeFile);
+const read = promisify(fs.readFile);
+
+const sanitizeBulk = async (outDir: string, files: string[]) => {
+  console.log('Compiling...');
+  const program = ts.createProgram(files, {
+    declaration: true,
+    target: ts.ScriptTarget.ES2020,
+    module: ts.ModuleKind.NodeNext,
+    noImplicitAny: true,
+    outDir: `${outDir}/dist`,
+    rootDir: outDir,
+    typeRoots: ['node_modules/@types'],
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    allowSyntheticDefaultImports: true,
+    exclude: ['dist', 'node_modules'],
+  });
+  const emitResult = program.emit();
+
+  const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+
+  for (const diagnostic of allDiagnostics) {
+    if (diagnostic.file) {
+      const { line, character } = ts.getLineAndCharacterOfPosition(
+        diagnostic.file,
+        diagnostic.start ?? 0,
       );
-      for (const error of file.messages) {
-        if (error.fix !== undefined || error.severity !== 2) {
-          continue;
-        }
-        console.warn(
-          `${error.line.toString()}: ${error.ruleId?.toString() ?? 'unknown'}: ${error.message}`,
-        );
-        //console.warn(JSON.stringify(error));
-      }
+      const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+      console.log(
+        `${diagnostic.file.fileName} (${(line + 1).toString()},${(character + 1).toString()}): ${message}`,
+      );
+    } else {
+      console.log(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
     }
+  }
+
+  if (emitResult.emitSkipped) {
+    console.error('Failed to compile some files');
     process.exit(1);
   }
-  await ESLint.outputFixes(lintedOutput);
 
-  for await (const file of walk(clientDir)) {
+  console.log('Formatting...');
+  const promises: Promise<unknown>[] = [];
+  for await (const file of walk(outDir)) {
     if (!file.endsWith('.ts')) {
       continue;
     }
-    fs.writeFileSync(
-      file,
-      await prettier.format(fs.readFileSync(file, 'utf-8'), {
-        parser: 'typescript',
-        ...prettierConfig,
-      }),
+    promises.push(
+      read(file, 'utf-8')
+        .then((content) =>
+          prettier.format(content, {
+            parser: 'typescript',
+            ...prettierConfig,
+          }),
+        )
+        .then((formatted) => write(file, formatted)),
     );
   }
+  await Promise.all(promises);
 };
 
 export default sanitizeBulk;

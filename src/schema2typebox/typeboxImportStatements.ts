@@ -10,7 +10,6 @@ const typeboxImportStatements = (typeOnlyHints = false) =>
     // these type imports serve to make the generated .d.ts files more readable
     typeOnlyHints &&
       template.lines(
-        '// prettier-ignore',
         'import {',
         '  /* eslint-disable @typescript-eslint/no-unused-vars,unused-imports/no-unused-imports */',
         '  type TObject,',

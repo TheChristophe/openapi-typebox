@@ -22,6 +22,9 @@ const name =
   };
 
 const config = tseslint.config(
+  {
+    ignores: ['**/*.js'],
+  },
   eslint.configs.recommended,
   // TODO: evaluate 'stylistic'
   ...tseslint.configs.strictTypeChecked,
@@ -76,6 +79,7 @@ const config = tseslint.config(
 
       'import/first': 'error',
       'import/no-absolute-path': 'error',
+      'import/no-duplicates': 'error',
 
       'import/consistent-type-specifier-style': ['error', 'prefer-inline'],
       'import/prefer-default-export': ['warn'],
@@ -94,9 +98,6 @@ const config = tseslint.config(
       '@typescript-eslint/consistent-type-imports': 'off',
       // broken?
       '@typescript-eslint/no-unnecessary-condition': 'off',
-
-      // slow:
-      'import/no-duplicates': 'off',
     },
   },
 );

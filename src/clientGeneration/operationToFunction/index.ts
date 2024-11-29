@@ -72,16 +72,18 @@ const buildJsDoc = (operation: Operation) =>
     ' **/',
   );
 
+export type FunctionMetadata = {
+  operationName: string;
+  hasParams: boolean;
+  importPath: string;
+  systemPath: string;
+};
 const operationToFunction = (
   route: string,
   method: string,
   operation: Operation,
   outDir: string,
-): {
-  operationName: string;
-  hasParams: boolean;
-  importPath: string;
-} => {
+): FunctionMetadata => {
   const operationName = operation.operationId ?? routeToOperationName(route, method);
 
   const lines: string[] = [];
@@ -176,7 +178,7 @@ const operationToFunction = (
 
         template.concat(
           // eslint-disable-next-line no-template-curly-in-string
-          '`${url}',
+          queryParams.length > 0 ? '`${url}' : 'url',
 
           queryParams.length > 0 && [
             '?${new URLSearchParams({',
@@ -188,7 +190,8 @@ const operationToFunction = (
             '}).toString()}',
           ],
 
-          '`,',
+          queryParams.length > 0 && '`',
+          ',',
         ),
 
         '{',
@@ -225,6 +228,7 @@ const operationToFunction = (
     operationName,
     hasParams: takesParameters,
     importPath: `./functions/${operationName}.js`,
+    systemPath: `${outDir}/functions/${operationName}.ts`,
   };
 };
 

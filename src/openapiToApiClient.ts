@@ -1,21 +1,24 @@
 import fs from 'node:fs';
-import YAML from 'yaml';
-import type OpenApiSpec from './openapi/index.js';
-import writeSourceFile from './writeSourceFile.js';
 import path from 'node:path';
-import { OpenApiMethods } from './openapi/PathItem.js';
-import operationToFunction from './clientGeneration/operationToFunction/index.js';
-import template from './templater.js';
-import configuration from './configuration.js';
-import sanitizeBulk from './sanitizeBulk.js';
+import YAML from 'yaml';
 import { processComponentSchemas } from './clientGeneration/generateSchemas.js';
+import operationToFunction, {
+  FunctionMetadata,
+} from './clientGeneration/operationToFunction/index.js';
+import configuration from './configuration.js';
+import type OpenApiSpec from './openapi/index.js';
+import { OpenApiMethods } from './openapi/PathItem.js';
+import sanitizeBulk from './sanitizeBulk.js';
+import template from './templater.js';
+import writeSourceFile from './writeSourceFile.js';
 
 const processPaths = (
   paths: Required<OpenApiSpec>['paths'],
   outDir: string,
-): ReturnType<typeof operationToFunction>[] => {
+): FunctionMetadata[] => {
   console.log('Mkdir', path.join(outDir, 'functions'));
   fs.mkdirSync(path.join(outDir, 'functions'), { recursive: true });
+  const files: string[] = [];
 
   const sharedFiles = ['clientConfig.ts', 'ApiError.ts', 'apiFunction.ts'];
   for (const file of sharedFiles) {
@@ -23,9 +26,10 @@ const processPaths = (
       `${outDir}/${file}`,
       fs.readFileSync(new URL(import.meta.resolve(`./clientLib/${file}`)), 'utf-8'),
     );
+    files.push(`${outDir}/${file}`);
   }
 
-  const functions: ReturnType<typeof operationToFunction>[] = [];
+  const functions: FunctionMetadata[] = [];
 
   for (const [route, pathItem] of Object.entries(paths)) {
     for (const method of Object.values(OpenApiMethods)) {
@@ -36,6 +40,10 @@ const processPaths = (
 
       functions.push(operationToFunction(route, method, operation, outDir));
     }
+  }
+
+  for (const fn of functions) {
+    files.push(fn.systemPath);
   }
 
   return functions;
@@ -81,6 +89,7 @@ const buildClient = (
   );
 
   writeSourceFile(`${outDir}/buildClient.ts`, source);
+  return `${outDir}/buildClient.ts`;
 };
 
 const generatePackage = (version: string, outDir: string) => {
@@ -115,7 +124,7 @@ const generatePackage = (version: string, outDir: string) => {
         }),
         scripts: {
           build: 'tsc',
-          prepublishOnly: 'npm run build',
+          //prepublishOnly: 'npm run build',
         },
         dependencies: {
           // TODO: find a good way to keep these updated
@@ -201,20 +210,23 @@ const openapiToApiClient = async (specPath: string, outDir: string) => {
   //fs.rmSync(outPath, { recursive: true, force: true });
   fs.mkdirSync(outPath, { recursive: true });
 
+  const files = [];
+
   if (spec.components?.schemas != null) {
-    processComponentSchemas(spec.components.schemas, outPath);
+    files.push(...processComponentSchemas(spec.components.schemas, outPath));
   }
 
   if (spec.paths != null) {
     const functions = processPaths(spec.paths, outPath);
-    buildClient(functions, outDir);
+    files.push(...functions.map((fn) => fn.systemPath));
+    files.push(buildClient(functions, outDir));
   }
 
   if (configuration.package) {
     generatePackage(spec.info.version, outPath);
   }
 
-  await sanitizeBulk(outPath);
+  await sanitizeBulk(outPath, files);
 };
 
 export default openapiToApiClient;
