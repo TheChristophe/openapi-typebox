@@ -7,7 +7,9 @@ const toValue = (value: unknown) => {
       if (el || el === '') {
         const intermediary = toValue(el);
         if (intermediary || intermediary === '') {
-          outputBuf && (outputBuf += ' ');
+          if (outputBuf) {
+            outputBuf += ' ';
+          }
           outputBuf += intermediary;
         }
       }
@@ -23,7 +25,9 @@ const templater = (separator: string, ...args: unknown[]) => {
     if (arg || arg === '') {
       const intermediary: string = toValue(arg);
       if (intermediary || intermediary === '') {
-        outputBuf && (outputBuf += separator);
+        if (outputBuf) {
+          outputBuf += separator;
+        }
         outputBuf += intermediary;
       }
     }

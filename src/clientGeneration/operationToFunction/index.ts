@@ -5,7 +5,8 @@ import type RequestBody from '../../openapi/RequestBody.js';
 import writeSourceFile from '../../writeSourceFile.js';
 
 import configuration from '../../configuration.js';
-import typeboxImportStatements from '../../schema2typebox/typeboxImportStatements.js';
+import { deduplicate } from '../../deduplicate.js';
+import typeboxImportStatements from '../../modelGeneration/typeboxImportStatements.js';
 import template from '../../templater.js';
 import buildParameterTypes from './buildParameterTypes.js';
 import buildResponseReturn from './buildResponseReturn.js';
@@ -16,6 +17,7 @@ import commentSanitize from './helpers/commentSanitize.js';
 import refUnsupported from './helpers/refUnsupported.js';
 import routeToOperationName from './helpers/routeToOperationName.js';
 import sanitizeVariableName from './helpers/sanitizeVariableName.js';
+import { uppercaseFirst } from './helpers/stringManipulation.js';
 
 export class InvalidParamError extends Error {}
 
@@ -118,7 +120,7 @@ const operationToFunction = (
     ),
   );
 
-  const parameterTypeName = 'Params';
+  const parameterTypeName = `${uppercaseFirst(operationName)}Params`;
   const takesParameters = requestBody != null || parameters.length > 0;
 
   if (takesParameters) {
@@ -131,8 +133,8 @@ const operationToFunction = (
     lines.push(`import type ${parameterTypeName} from './${operationName}.parameters.js';`, '');
   }
 
-  const responseTypeName = 'ResponseAll';
-  const errorType = 'ResponseBad';
+  const responseTypeName = `${uppercaseFirst(operationName)}Response`;
+  const errorType = `${uppercaseFirst(operationName)}Error`;
   if (operation.responses && Object.keys(operation.responses).length > 0) {
     const { types } = buildResponseTypes(
       `${outDir}/functions/${operationName}.responses.ts`,
@@ -221,7 +223,7 @@ const operationToFunction = (
 
   writeSourceFile(
     `${outDir}/functions/${operationName}.ts`,
-    template.lines(typeboxImportStatements(), '', ...imports, '', ...lines),
+    template.lines(typeboxImportStatements, '', ...deduplicate(imports), '', ...lines),
   );
 
   return {

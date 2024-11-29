@@ -1,8 +1,8 @@
-import type JsonSchema from './JsonSchema.js';
 import type Example from './Example.js';
-import type Reference from './Reference.js';
+import type JsonSchema from './JsonSchema.js';
 import type MediaType from './MediaType.js';
 import type PRecord from './PRecord.js';
+import type Reference from './Reference.js';
 
 /**
  * https://swagger.io/specification/#parameter-object
@@ -34,6 +34,7 @@ type Parameter = {
   deprecated?: boolean;
   /**
    * Sets the ability to pass empty-valued parameters. This is valid only for query parameters and allows sending a parameter with an empty value. Default value is false. If style is used, and if behavior is n/a (cannot be serialized), the value of allowEmptyValue SHALL be ignored. Use of this property is NOT RECOMMENDED, as it is likely to be removed in a later revision.
+   * @deprecated
    */
   allowEmptyValue?: boolean;
   /**

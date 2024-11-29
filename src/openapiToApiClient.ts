@@ -128,11 +128,11 @@ const generatePackage = (version: string, outDir: string) => {
         },
         dependencies: {
           // TODO: find a good way to keep these updated
-          '@sinclair/typebox': '^0.33',
+          '@sinclair/typebox': '^0.34',
         },
         devDependencies: {
           // TODO: find a good way to keep these updated
-          '@types/node': '^20',
+          '@types/node': '^22',
           typescript: '^5',
         },
         module: './dist/index.js',

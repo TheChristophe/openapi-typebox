@@ -30,34 +30,36 @@
 import {
   type JSONSchema7,
   type JSONSchema7Definition,
-  type JSONSchema7Type,
   type JSONSchema7TypeName,
 } from 'json-schema';
 
-export type RefSchema = JSONSchema7 & { $ref: string };
+type RequireFields<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>;
+type ReplaceField<T, K extends keyof T, N> = Omit<T, K> & Record<K, N>;
+
+export type RefSchema = RequireFields<JSONSchema7, '$ref'>;
 export const isRef = (schema: JSONSchema7): schema is RefSchema => schema['$ref'] !== undefined;
 
-export type ObjectSchema = JSONSchema7 & { type: 'object' };
+export type ObjectSchema = ReplaceField<JSONSchema7, 'type', 'object'>;
 export const isObjectSchema = (schema: JSONSchema7): schema is ObjectSchema =>
   schema['type'] !== undefined && schema['type'] === 'object';
 
-export type EnumSchema = JSONSchema7 & { enum: JSONSchema7Type[] };
+export type EnumSchema = RequireFields<JSONSchema7, 'enum'>;
 export const isEnumSchema = (schema: JSONSchema7): schema is EnumSchema =>
   schema['enum'] !== undefined;
 
-export type AnyOfSchema = JSONSchema7 & { anyOf: JSONSchema7Definition[] };
+export type AnyOfSchema = RequireFields<JSONSchema7, 'anyOf'>;
 export const isAnyOfSchema = (schema: JSONSchema7): schema is AnyOfSchema =>
   schema['anyOf'] !== undefined;
 
-export type AllOfSchema = JSONSchema7 & { allOf: JSONSchema7Definition[] };
+export type AllOfSchema = RequireFields<JSONSchema7, 'allOf'>;
 export const isAllOfSchema = (schema: JSONSchema7): schema is AllOfSchema =>
   schema['allOf'] !== undefined;
 
-export type OneOfSchema = JSONSchema7 & { oneOf: JSONSchema7Definition[] };
+export type OneOfSchema = RequireFields<JSONSchema7, 'oneOf'>;
 export const isOneOfSchema = (schema: JSONSchema7): schema is OneOfSchema =>
   schema['oneOf'] !== undefined;
 
-export type NotSchema = JSONSchema7 & { not: JSONSchema7Definition };
+export type NotSchema = RequireFields<JSONSchema7, 'not'>;
 export const isNotSchema = (schema: JSONSchema7): schema is NotSchema =>
   schema['not'] !== undefined;
 
@@ -68,7 +70,7 @@ export type ArraySchema = JSONSchema7 & {
 export const isArraySchema = (schema: JSONSchema7): schema is ArraySchema =>
   schema.type === 'array';
 
-export type ConstSchema = JSONSchema7 & { const: JSONSchema7Type };
+export type ConstSchema = RequireFields<JSONSchema7, 'const'>;
 export const isConstSchema = (schema: JSONSchema7): schema is ConstSchema =>
   schema.const !== undefined;
 
@@ -79,5 +81,3 @@ export const isUnknownSchema = (schema: JSONSchema7): schema is UnknownSchema =>
 export type MultipleTypesSchema = JSONSchema7 & { type: JSONSchema7TypeName[] };
 export const isSchemaWithMultipleTypes = (schema: JSONSchema7): schema is MultipleTypesSchema =>
   Array.isArray(schema.type);
-
-export const isNullType = (type: JSONSchema7Type): type is null => type === null;

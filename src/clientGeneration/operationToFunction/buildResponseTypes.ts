@@ -1,6 +1,7 @@
+import { deduplicate } from '../../deduplicate.js';
+import schemaToModel from '../../modelGeneration/schemaToModel.js';
+import typeboxImportStatements from '../../modelGeneration/typeboxImportStatements.js';
 import type Responses from '../../openapi/Responses.js';
-import { collect } from '../../schema2typebox/index.js';
-import typeboxImportStatements from '../../schema2typebox/typeboxImportStatements.js';
 import template from '../../templater.js';
 import writeSourceFile from '../../writeSourceFile.js';
 import { SUCCESS_CODES } from '../clientLib/HTTPStatusCode.js';
@@ -30,19 +31,22 @@ const buildResponseTypes = (
       // TODO: different types
       lines.push(`type ${responseName} = unknown;`);
     } else {
-      const schema = responseSchema.schema != null ? collect(responseSchema.schema) : undefined;
+      const schema =
+        responseSchema.schema != null
+          ? schemaToModel(responseSchema.schema, responseName)
+          : undefined;
 
-      const code = schema?.code !== undefined ? schema.code : 'unknown';
-      lines.push(
-        template.lines(
-          `const ${responseName} = ${code};`,
-          `export type ${responseName} = Static<typeof ${responseName}>;`,
-          '',
-        ),
-      );
-      types.push({ typename: responseName, responseCode: statusCode });
-      if (schema?.extraImports) {
-        extraImports.push(...schema.extraImports);
+      if (schema?.code !== undefined) {
+        lines.push(schema.code);
+      } else {
+        lines.push(`export type ${responseName} = unknown;`);
+      }
+      if (schema) {
+        extraImports.push(...schema.imports);
+      }
+      types.push({ typename: schema?.typeName ?? responseName, responseCode: statusCode });
+      if (schema?.imports) {
+        extraImports.push(...schema.imports);
       }
     }
   }
@@ -89,7 +93,7 @@ const buildResponseTypes = (
 
   writeSourceFile(
     outFile,
-    template.lines(typeboxImportStatements(true), ...extraImports, '', ...lines),
+    template.lines(...deduplicate([typeboxImportStatements, ...extraImports]), '', ...lines),
   );
 
   return { types };

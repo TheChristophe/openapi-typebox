@@ -1,12 +1,12 @@
-import writeSourceFile from '../writeSourceFile.js';
-import template from '../templater.js';
-import type OpenApiSpec from '../openapi/index.js';
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
+import MissingReferenceError from '../modelGeneration/MissingReferenceError.js';
+import { schemaToModelFile } from '../modelGeneration/schemaToModel.js';
+import type OpenApiSpec from '../openapi/index.js';
 import type JsonSchema from '../openapi/JsonSchema.js';
-import { schema2typebox } from '../schema2typebox/index.js';
 import { addReference, knownReferences } from '../referenceDictionary.js';
-import MissingReferenceError from '../schema2typebox/MissingReferenceError.js';
+import template from '../templater.js';
+import writeSourceFile from '../writeSourceFile.js';
 
 const generateComponentIndex: (...args: Parameters<typeof processComponentSchemas>) => string[] = (
   schemas,
@@ -18,7 +18,7 @@ const generateComponentIndex: (...args: Parameters<typeof processComponentSchema
       ...Object.entries(schemas)
         .filter(([, schema]) => schema !== undefined)
         .sort(([key1], [key2]) => (key1 < key2 ? -1 : key1 > key2 ? 1 : 0))
-        .map(([key]) => `export { ${key}Schema, default as ${key} } from './${key}.js';`),
+        .map(([key]) => `export { ${key}Schema, ${key} as ${key} } from './${key}.js';`),
     ),
   );
 
@@ -41,14 +41,14 @@ export const processComponentSchemas = (
   }
 
   writeSourceFile(
-    `${outDir}/models/_oneOf.ts`,
+    `${outDir}/_oneOf.ts`,
     fs.readFileSync(new URL(import.meta.resolve('../clientLib/_oneOf.ts')), 'utf-8'),
   );
   writeSourceFile(
     `${outDir}/HTTPStatusCode.ts`,
     fs.readFileSync(new URL(import.meta.resolve('../clientLib/HTTPStatusCode.ts')), 'utf-8'),
   );
-  files.push(`${outDir}/models/_oneOf.ts`, `${outDir}/HTTPStatusCode.ts`);
+  files.push(`${outDir}/_oneOf.ts`, `${outDir}/HTTPStatusCode.ts`);
 
   while (openSet.length > 0) {
     let progressed = false;
@@ -59,7 +59,7 @@ export const processComponentSchemas = (
       const [key, schema] = openSet[i];
       try {
         const destFile = `${outDir}/models/${key}.ts`;
-        writeSourceFile(destFile, schema2typebox(schema, key));
+        writeSourceFile(destFile, schemaToModelFile(schema, key));
         files.push(destFile);
 
         addReference(`#/components/schemas/${key}`, {

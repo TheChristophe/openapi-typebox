@@ -9,14 +9,11 @@ importers:
   .:
     dependencies:
       '@sinclair/typebox':
-        specifier: ^0.32.35
-        version: 0.32.35
+        specifier: ^0.34.11
+        version: 0.34.11
       eslint:
         specifier: ^9.15.0
         version: 9.15.0
-      fp-ts:
-        specifier: ^2.16.9
-        version: 2.16.9
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
@@ -63,9 +60,6 @@ importers:
       '@types/node':
         specifier: ^20.17.7
         version: 20.17.7
-      '@types/yaml':
-        specifier: ^1.9.7
-        version: 1.9.7
       copyfiles:
         specifier: ^2.4.1
         version: 2.4.1
@@ -169,8 +163,8 @@ packages:
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
 
-  '@sinclair/typebox@0.32.35':
-    resolution: {integrity: sha512-Ul3YyOTU++to8cgNkttakC0dWvpERr6RYoHO2W47DLbFvrwBDJUY31B1sImH6JZSYc4Kt4PyHtoPNu+vL2r2dA==}
+  '@sinclair/typebox@0.34.11':
+    resolution: {integrity: sha512-zE9pWGVSG82z+sFO+oUmqmqRVm8Wg5sVhmljYi1fDhLOSphBBy939QmC/qXcKFWqTiRJ6keyG4y75bIoTPRBAw==}
 
   '@types/copyfiles@2.4.4':
     resolution: {integrity: sha512-2PhDCltCORlPrpM3gxZ0XuYaDcCOU46SQ7E89uzgbJ4jhpzpya/ssIY0jBA/gHtvh3SE4dxW8aMitQk0/ewlIw==}
@@ -198,10 +192,6 @@ packages:
 
   '@types/node@20.17.7':
     resolution: {integrity: sha512-sZXXnpBFMKbao30dUAvzKbdwA2JM1fwUtVEq/kxKuPI5mMwZiRElCpTXb0Biq/LMEVpXDZL5G5V0RPnxKeyaYg==}
-
-  '@types/yaml@1.9.7':
-    resolution: {integrity: sha512-8WMXRDD1D+wCohjfslHDgICd2JtMATZU8CkhH8LVJqcJs6dyYj5TGptzP8wApbmEullGBSsCEzzap73DQ1HJaA==}
-    deprecated: This is a stub types definition. yaml provides its own type definitions, so you do not need this installed.
 
   '@typescript-eslint/eslint-plugin@8.15.0':
     resolution: {integrity: sha512-+zkm9AR1Ds9uLWN3fkoeXgFppaQ+uEVtfOV62dDmsy9QCNqlRHWNEck4yarvRNrvRcHQLGfqBNui3cimoz8XAg==}
@@ -609,9 +599,6 @@ packages:
   foreground-child@3.3.0:
     resolution: {integrity: sha512-Ld2g8rrAyMYFXBhEqMz8ZAHBi4J4uS1i/CxGMDnjyFWddMXLVcDp051DZfu+t7+ab7Wv6SMqpWmyFIj5UbfFvg==}
     engines: {node: '>=14'}
-
-  fp-ts@2.16.9:
-    resolution: {integrity: sha512-+I2+FnVB+tVaxcYyQkHUq7ZdKScaBlX53A41mxQtpIccsfyv8PzdzP7fzp2AY832T4aoK6UZ5WRX/ebGd8uZuQ==}
 
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
@@ -1361,7 +1348,7 @@ snapshots:
 
   '@rtsao/scc@1.1.0': {}
 
-  '@sinclair/typebox@0.32.35': {}
+  '@sinclair/typebox@0.34.11': {}
 
   '@types/copyfiles@2.4.4': {}
 
@@ -1389,10 +1376,6 @@ snapshots:
   '@types/node@20.17.7':
     dependencies:
       undici-types: 6.19.8
-
-  '@types/yaml@1.9.7':
-    dependencies:
-      yaml: 2.6.1
 
   '@typescript-eslint/eslint-plugin@8.15.0(@typescript-eslint/parser@8.15.0(eslint@9.15.0)(typescript@5.7.2))(eslint@9.15.0)(typescript@5.7.2)':
     dependencies:
@@ -1922,8 +1905,6 @@ snapshots:
     dependencies:
       cross-spawn: 7.0.6
       signal-exit: 4.1.0
-
-  fp-ts@2.16.9: {}
 
   fs.realpath@1.0.0: {}
 

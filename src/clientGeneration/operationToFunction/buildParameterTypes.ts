@@ -1,45 +1,31 @@
+import { JSONSchema7Definition } from 'json-schema';
+import { deduplicate } from '../../deduplicate.js';
+import schemaToModel from '../../modelGeneration/schemaToModel.js';
 import type Parameter from '../../openapi/Parameter.js';
 import type RequestBody from '../../openapi/RequestBody.js';
-import { collect } from '../../schema2typebox/index.js';
-import { type CodegenSlice } from '../../schema2typebox/joinBatch.js';
-import typeboxImportStatements from '../../schema2typebox/typeboxImportStatements.js';
 import template from '../../templater.js';
 import writeSourceFile from '../../writeSourceFile.js';
 
-const generateParameter = (parameter: Parameter): CodegenSlice => {
-  const schema = parameter.schema !== undefined ? collect(parameter.schema) : undefined;
-
-  const required = parameter.required ?? parameter.in === 'path';
-  const code =
-    schema?.code !== undefined
-      ? required
-        ? schema.code
-        : `Type.Optional(${schema.code})`
-      : 'unknown';
-
-  return {
-    code: `${parameter.name}: ${code}`,
-    extraImports: schema?.extraImports,
+const parameterSchema = (parameter: Parameter): [string, JSONSchema7Definition] => {
+  const schema = parameter.schema ?? {
+    type: 'object',
   };
-};
+  if (parameter.description) {
+    schema['description'] = parameter.description;
+  }
+  if (parameter.deprecated) {
+    schema['deprecated'] = true;
+  }
+  if (parameter.example) {
+    schema['example'] = parameter.example;
+  } else if (parameter.examples) {
+    schema['example'] = parameter.examples;
+  }
+  if (parameter.required) {
+    schema['required'] = true;
+  }
 
-const generateBody = (requestBody: RequestBody): CodegenSlice => {
-  const jsonSchema = requestBody.content['application/json']?.schema;
-
-  const schema = jsonSchema != null ? collect(jsonSchema) : undefined;
-
-  const required = requestBody.required ?? false;
-  const code =
-    schema?.code !== undefined
-      ? required
-        ? schema.code
-        : `Type.Optional(${schema.code})`
-      : 'unknown';
-
-  return {
-    code: `body: ${code},`,
-    extraImports: schema?.extraImports,
-  };
+  return [parameter.name, schema];
 };
 
 const buildParameterTypes = (
@@ -48,28 +34,38 @@ const buildParameterTypes = (
   parameters: Parameter[] = [],
   requestBody?: RequestBody,
 ) => {
-  const parameterSlices = parameters.map(generateParameter);
-  const bodyParameter = requestBody ? generateBody(requestBody) : undefined;
+  // for now just mock a schema
+  // TODO: write own generator?
+  const schema = schemaToModel(
+    {
+      type: 'object',
+      properties: {
+        ...(requestBody !== undefined && {
+          body: requestBody.content['application/json']?.schema ?? { type: 'object' },
+        }),
+        ...(parameters.length > 0 && {
+          params: {
+            type: 'object',
+            properties: {
+              ...Object.fromEntries(parameters.map(parameterSchema)),
+            },
+            required: [...parameters.filter((p) => p.required).map((p) => p.name)],
+          },
+        }),
+      },
+      required: [...(requestBody ? ['body'] : []), ...(parameters.length > 0 ? ['params'] : [])],
+    },
+    typeName,
+  );
 
   writeSourceFile(
     outFile,
     template.lines(
-      typeboxImportStatements(true),
-      ...parameterSlices.flatMap(({ extraImports }) => extraImports ?? []),
-      ...(bodyParameter?.extraImports ?? []),
+      ...deduplicate(schema.imports),
       '',
-      `const ${typeName} = Type.Object({`,
-      bodyParameter !== undefined && bodyParameter.code,
-      parameterSlices.length > 0 &&
-        template.concat(
-          'params: Type.Object({',
-          parameterSlices.map(({ code }) => `${code},`),
-          '}),',
-        ),
-      '});',
-      `type ${typeName} = Static<typeof ${typeName}>;`,
+      schema.code,
       '',
-      `export default ${typeName};`,
+      `export default ${schema.typeName};`,
     ),
   );
 };
