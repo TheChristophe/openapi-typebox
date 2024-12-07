@@ -88,7 +88,7 @@ const valueToEnumEntry = (value: JSONSchema7Type) => {
 };
 
 const generateEnum = (name: string, schema: EnumSchema) =>
-  template.lines(`const ${name} = {`, schema.enum.map(valueToEnumEntry), '} as const;');
+  template.lines(`export const ${name} = {`, schema.enum.map(valueToEnumEntry), '} as const;');
 
 const typeFields = [
   'title',
