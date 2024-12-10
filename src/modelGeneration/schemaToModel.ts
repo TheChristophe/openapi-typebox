@@ -5,10 +5,11 @@ import {
   type JSONSchema7TypeName,
 } from 'json-schema';
 import GenerationError from '../GenerationError.js';
+import appContext from '../appContext.js';
 import sanitizeVariableName from '../clientGeneration/operationToFunction/helpers/sanitizeVariableName.js';
 import { uppercaseFirst } from '../clientGeneration/operationToFunction/helpers/stringManipulation.js';
+import configuration from '../configuration.js';
 import { deduplicate } from '../deduplicate.js';
-import { lookupReference } from '../referenceDictionary.js';
 import template from '../templater.js';
 import MissingReferenceError from './MissingReferenceError.js';
 import { CodegenSlice, joinSubSlices } from './joinSlices.js';
@@ -308,13 +309,15 @@ class TypescriptEmitter implements CodeEmitter {
 
 const generator = (emitter: CodeEmitter) => {
   const resolveObjectReference = (schema: RefSchema): CodegenSlice => {
-    const entry = lookupReference(schema['$ref']);
+    const entry = appContext.schemas.lookup(schema['$ref']);
 
     if (entry == null) {
       throw new MissingReferenceError(schema['$ref']);
     }
 
-    return emitter.import(entry.name);
+    // TODO: use other source of truth for imports instead of building manually
+    //       it includes import for schema & type
+    return emitter.import(entry.typeName);
   };
 
   const parseObject = (schema: ObjectSchema): CodegenSlice => {
@@ -510,6 +513,9 @@ const generator = (emitter: CodeEmitter) => {
     }
 
     if (typeof schema === 'object' && 'nullable' in schema) {
+      if (configuration.strict) {
+        throw new GenerationError("'nullable: true' is invalid in OpenAPI 3.1.0.");
+      }
       console.warn(
         "Warning: 'nullable: true' is invalid in OpenAPI 3.1.0 and is only supported for compatibility reasons.",
       );
@@ -547,7 +553,11 @@ const generator = (emitter: CodeEmitter) => {
     } else if (schema.type !== undefined && !Array.isArray(schema.type)) {
       return parseSchemaType(schema.type, schema);
     }
-    throw new GenerationError(`Unsupported schema: ${JSON.stringify(schema)}`);
+    if (configuration.strict) {
+      throw new GenerationError(`Unsupported schema: ${JSON.stringify(schema)}`);
+    }
+    console.warn(`Unsupported schema: ${JSON.stringify(schema)}, defaulting to unknown`);
+    return parseUnknown();
   };
 
   return generate;
@@ -596,15 +606,6 @@ const schemaToModel = (
         generateEnum(typeName, jsonSchema),
     ),
   };
-};
-
-export const schemaToModelFile = (
-  jsonSchema: JSONSchema7Definition,
-  name: string = generateTypeName(jsonSchema),
-) => {
-  const { imports, code } = schemaToModel(jsonSchema, name);
-
-  return template.lines(imports.join('\n'), '', code);
 };
 
 export default schemaToModel;

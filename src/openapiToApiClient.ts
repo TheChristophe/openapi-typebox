@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import { processComponentSchemas } from './clientGeneration/generateSchemas.js';
+import generateResponses from './clientGeneration/generateResponses.js';
+import generateSchemas from './clientGeneration/generateSchemas.js';
 import operationToFunction, {
   FunctionMetadata,
 } from './clientGeneration/operationToFunction/index.js';
@@ -213,7 +214,10 @@ const openapiToApiClient = async (specPath: string, outDir: string) => {
   const files = [];
 
   if (spec.components?.schemas != null) {
-    files.push(...processComponentSchemas(spec.components.schemas, outPath));
+    files.push(...generateSchemas(spec.components.schemas, outPath));
+  }
+  if (spec.components?.responses != null) {
+    files.push(...generateResponses(spec.components.responses, outPath));
   }
 
   if (spec.paths != null) {

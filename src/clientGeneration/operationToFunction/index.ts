@@ -4,13 +4,12 @@ import type Reference from '../../openapi/Reference.js';
 import type RequestBody from '../../openapi/RequestBody.js';
 import writeSourceFile from '../../writeSourceFile.js';
 
-import configuration from '../../configuration.js';
 import { deduplicate } from '../../deduplicate.js';
 import typeboxImportStatements from '../../modelGeneration/typeboxImportStatements.js';
 import template from '../../templater.js';
 import buildParameterTypes from './buildParameterTypes.js';
 import buildResponseReturn from './buildResponseReturn.js';
-import buildResponseTypes from './buildResponseTypes.js';
+import buildResponseTypes, { ResponseTypes } from './buildResponseTypes.js';
 import buildUrl from './buildUrl.js';
 import destructureParameters from './destructureParameters.js';
 import commentSanitize from './helpers/commentSanitize.js';
@@ -93,6 +92,7 @@ const operationToFunction = (
 
   const parameters = operation.parameters ?? [];
   const requestBody = operation.requestBody;
+  // TODO
   forbidReferencesInParameters(parameters);
   forbidReferencesInRequestBody(requestBody);
 
@@ -115,7 +115,6 @@ const operationToFunction = (
       //"import { type ResponseBrand } from '../typeBranding.js';",
       "import { type ApiFunction } from '../apiFunction.js';",
       "import { HTTPInformational, HTTPSuccess, HTTPRedirection, HTTPClientError, HTTPServerError } from '../HTTPStatusCode.js';",
-      configuration.throwOnError && "import ApiError from '../ApiError.js';",
       '',
     ),
   );
@@ -135,6 +134,7 @@ const operationToFunction = (
 
   const responseTypeName = `${uppercaseFirst(operationName)}Response`;
   const errorType = `${uppercaseFirst(operationName)}Error`;
+  let responseTypes: ResponseTypes | null = null;
   if (operation.responses && Object.keys(operation.responses).length > 0) {
     const { types } = buildResponseTypes(
       `${outDir}/functions/${operationName}.responses.ts`,
@@ -142,9 +142,11 @@ const operationToFunction = (
       errorType,
       operation.responses,
     );
+    responseTypes = types;
     lines.push(
       `import type ${responseTypeName} from './${operationName}.responses.js';`,
-      `import { ${types.flatMap(({ typename }) => (typename ? `type ${typename}` : [])).join(', ')} } from './${operationName}.responses.js';`,
+      `import { ${types.flatMap(({ import: import_, typename }) => (typename && import_ === undefined ? `type ${typename}` : [])).join(', ')} } from './${operationName}.responses.js';`,
+      ...types.flatMap(({ import: import_ }) => import_ ?? []),
       '',
     );
   }
@@ -213,7 +215,8 @@ const operationToFunction = (
         operation.responses == null &&
           template.lines('return ({', 'status: response.status,', `} as ${errorType});`),
 
-        operation.responses != null && buildResponseReturn(operationName, operation.responses),
+        operation.responses != null &&
+          buildResponseReturn(operationName, operation.responses, responseTypes),
       ),
       '};',
       ' ',

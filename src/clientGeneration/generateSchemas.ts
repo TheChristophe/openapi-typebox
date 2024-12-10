@@ -1,31 +1,27 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import appContext from '../appContext.js';
 import MissingReferenceError from '../modelGeneration/MissingReferenceError.js';
-import { schemaToModelFile } from '../modelGeneration/schemaToModel.js';
+import schemaToModel from '../modelGeneration/schemaToModel.js';
 import type OpenApiSpec from '../openapi/index.js';
 import type JsonSchema from '../openapi/JsonSchema.js';
-import { addReference, knownReferences } from '../referenceDictionary.js';
 import template from '../templater.js';
 import writeSourceFile from '../writeSourceFile.js';
 
-const generateComponentIndex: (...args: Parameters<typeof processComponentSchemas>) => string[] = (
-  schemas,
-  outDir,
-) => {
+const generateComponentIndex = (outDir: string) => {
   writeSourceFile(
     `${outDir}/models/index.ts`,
     template.lines(
-      ...Object.entries(schemas)
-        .filter(([, schema]) => schema !== undefined)
+      ...Object.entries(appContext.schemas.index)
         .sort(([key1], [key2]) => (key1 < key2 ? -1 : key1 > key2 ? 1 : 0))
-        .map(([key]) => `export { ${key}Schema, ${key} as ${key} } from './${key}.js';`),
+        .map(([, schema]) => schema.import),
     ),
   );
 
   return [`${outDir}/models/index.ts`];
 };
 
-export const processComponentSchemas = (
+const generateSchemas = (
   schemas: Required<Required<OpenApiSpec>['components']>['schemas'],
   outDir: string,
 ) => {
@@ -58,13 +54,18 @@ export const processComponentSchemas = (
     for (let i = openSet.length - 1; i >= 0; i--) {
       const [key, schema] = openSet[i];
       try {
-        const destFile = `${outDir}/models/${key}.ts`;
-        writeSourceFile(destFile, schemaToModelFile(schema, key));
+        const { typeName, validatorName, imports, code } = schemaToModel(schema, key);
+        const destFile = `${outDir}/models/${typeName}.ts`;
+
+        writeSourceFile(destFile, template.lines(...imports, '', code));
         files.push(destFile);
 
-        addReference(`#/components/schemas/${key}`, {
-          name: key,
+        appContext.schemas.add(`#/components/schemas/${key}`, {
+          typeName,
+          validatorName,
           sourceFile: destFile,
+          import: `import { type ${typeName}, ${validatorName} } from './${typeName}.js';`,
+          raw: schema,
         });
         progressed = true;
 
@@ -89,11 +90,13 @@ export const processComponentSchemas = (
       for (const e of errors) {
         console.error(e.message);
       }
-      console.log(knownReferences);
+      console.log(appContext.schemas.index);
       process.exit(1);
     }
   }
 
-  files.push(...generateComponentIndex(schemas, outDir));
+  files.push(...generateComponentIndex(outDir));
   return files;
 };
+
+export default generateSchemas;

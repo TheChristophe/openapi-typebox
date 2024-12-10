@@ -1,7 +1,7 @@
 /**
  * Check a property / variable name against a list of forbidden keywords
  *
- * @param varName
+ * @param varName variable name
  */
 const needsSanitization = (varName: string) => {
   // no starting with numbers

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import * as prettier from 'prettier';
 import * as ts from 'typescript';
+import configuration from './configuration.js';
 
 const prettierConfigPath = await prettier.resolveConfigFile();
 const prettierConfig = (prettierConfigPath &&
@@ -27,41 +28,43 @@ const write = promisify(fs.writeFile);
 const read = promisify(fs.readFile);
 
 const sanitizeBulk = async (outDir: string, files: string[]) => {
-  console.log('Compiling...');
-  const program = ts.createProgram(files, {
-    declaration: true,
-    target: ts.ScriptTarget.ES2020,
-    module: ts.ModuleKind.NodeNext,
-    noImplicitAny: true,
-    outDir: `${outDir}/dist`,
-    rootDir: outDir,
-    typeRoots: ['node_modules/@types'],
-    moduleResolution: ts.ModuleResolutionKind.NodeNext,
-    allowSyntheticDefaultImports: true,
-    exclude: ['dist', 'node_modules'],
-  });
-  const emitResult = program.emit();
+  if (configuration.compile) {
+    console.log('Compiling...');
+    const program = ts.createProgram(files, {
+      declaration: true,
+      target: ts.ScriptTarget.ES2020,
+      module: ts.ModuleKind.NodeNext,
+      noImplicitAny: true,
+      outDir: `${outDir}/dist`,
+      rootDir: outDir,
+      typeRoots: ['node_modules/@types'],
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+      allowSyntheticDefaultImports: true,
+      exclude: ['dist', 'node_modules'],
+    });
+    const emitResult = program.emit();
 
-  const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+    const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
 
-  for (const diagnostic of allDiagnostics) {
-    if (diagnostic.file) {
-      const { line, character } = ts.getLineAndCharacterOfPosition(
-        diagnostic.file,
-        diagnostic.start ?? 0,
-      );
-      const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-      console.log(
-        `${diagnostic.file.fileName} (${(line + 1).toString()},${(character + 1).toString()}): ${message}`,
-      );
-    } else {
-      console.log(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
+    for (const diagnostic of allDiagnostics) {
+      if (diagnostic.file) {
+        const { line, character } = ts.getLineAndCharacterOfPosition(
+          diagnostic.file,
+          diagnostic.start ?? 0,
+        );
+        const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+        console.log(
+          `${diagnostic.file.fileName} (${(line + 1).toString()},${(character + 1).toString()}): ${message}`,
+        );
+      } else {
+        console.log(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
+      }
     }
-  }
 
-  if (emitResult.emitSkipped) {
-    console.error('Failed to compile some files');
-    process.exit(1);
+    if (emitResult.emitSkipped) {
+      console.error('Failed to compile some files');
+      process.exit(1);
+    }
   }
 
   console.log('Formatting...');

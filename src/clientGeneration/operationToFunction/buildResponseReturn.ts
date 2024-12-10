@@ -1,32 +1,65 @@
-import template from '../../templater.js';
+import appContext from '../../appContext.js';
 import type Responses from '../../openapi/Responses.js';
-import refUnsupported from './helpers/refUnsupported.js';
+import template from '../../templater.js';
+import { ResponseTypes } from './buildResponseTypes.js';
 
-const buildResponseReturn = (operationName: string, responses: Responses) => {
+const buildResponseReturn = (
+  operationName: string,
+  responses: Responses,
+  responseTypes: ResponseTypes | null,
+) => {
   const lines: string[] = [];
 
   lines.push('switch (response.status) {');
+  let defaultResponse = null;
+
+  const responseTypeNames: Record<string, string | undefined> =
+    responseTypes?.reduce(
+      (acc, next) => {
+        acc[next.responseCode] = next.typename;
+        return acc;
+      },
+      {} as Record<string, string | undefined>,
+    ) ?? {};
 
   for (const [statusCode, response] of Object.entries(responses)) {
-    refUnsupported(response);
+    // TODO: type system quirk?
+    if (response === undefined) {
+      continue;
+    }
+    let resolvedResponse;
+    if ('$ref' in response) {
+      const resolved = appContext.responses.lookup(response.$ref);
+      if (resolved === undefined) {
+        throw new Error(`Could not resolve response reference ${response.$ref}`);
+      }
+      resolvedResponse = resolved.raw;
+    } else {
+      resolvedResponse = response;
+    }
 
-    lines.push(template.lines(`case ${statusCode}:`));
+    if (statusCode === 'default') {
+      defaultResponse = resolvedResponse;
+      continue;
+    } else {
+      lines.push(template.lines(`case ${statusCode}:`));
+    }
 
-    if (!response.content) {
+    const responseTypename = responseTypeNames[statusCode];
+    // TODO: how do make responseTypename or content check unnecessary
+    if (resolvedResponse.content === undefined || !responseTypename) {
       lines.push(template.lines('return {', `  status: ${statusCode},`, '  response,', '};'));
       continue;
     }
 
-    const responseName = `Response${statusCode}`;
-
-    const responseSchema = response.content['application/json'];
+    const responseSchema = resolvedResponse.content['application/json'];
     // json unsupported
     if (responseSchema === undefined) {
       lines.push(
         template.lines(
           'return {',
           `  status: ${statusCode},`,
-          `  data: await response.blob() as ${responseName},`,
+          `  data: await response.blob() as ${responseTypename},`,
           '  response,',
           '};',
         ),
@@ -36,7 +69,7 @@ const buildResponseReturn = (operationName: string, responses: Responses) => {
         template.lines(
           'return {',
           `  status: ${statusCode},`,
-          `  data: await response.json() as ${responseName},`,
+          `  data: await response.json() as ${responseTypename},`,
           '  response,',
           '};',
         ),
@@ -44,7 +77,28 @@ const buildResponseReturn = (operationName: string, responses: Responses) => {
     }
   }
 
-  lines.push(template.lines('default:', 'return {', '  status: -1,', '  response,', '};'));
+  const defaultResponseTypename = responseTypeNames['default'];
+  // TODO: how do make defaultResponseTypename check unnecessary
+  if (defaultResponse && defaultResponseTypename) {
+    lines.push(
+      template.lines(
+        'default:',
+        'if (response.status !== 0) {',
+        '  return {',
+        "    status: 'default',",
+        `    data: await response.json() as ${defaultResponseTypename},`,
+        '    response,',
+        '  };',
+        '}',
+        'return {',
+        '  status: -1,',
+        '  response,',
+        '};',
+      ),
+    );
+  } else {
+    lines.push(template.lines('default:', 'return {', '  status: -1,', '  response,', '};'));
+  }
 
   lines.push('}');
 

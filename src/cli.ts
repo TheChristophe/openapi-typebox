@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import meow from 'meow';
-import openapiToApiClient from './openapiToApiClient.js';
 import configuration from './configuration.js';
+import openapiToApiClient from './openapiToApiClient.js';
 
 const cli = meow(
   `
@@ -10,6 +10,8 @@ const cli = meow(
 
   Options
     --output, -o Output folder, default to "./client"
+    --strict Strict Openapi 3.1 mode
+    --compile Compile the generated client
     --package Generate a package.json
     --package-name Package name
     --package-registry Registry to publish to
@@ -28,6 +30,16 @@ const cli = meow(
         type: 'string',
         shortFlag: 'o',
         default: './client',
+      },
+
+      strict: {
+        type: 'boolean',
+        default: false,
+      },
+
+      compile: {
+        type: 'boolean',
+        default: false,
       },
 
       package: {
@@ -55,6 +67,9 @@ const cli = meow(
 if (cli.input.length === 0) {
   cli.showHelp();
 }
+
+configuration.strict = cli.flags.strict;
+configuration.compile = cli.flags.compile;
 
 if (cli.flags.package) {
   configuration.package = {

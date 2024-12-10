@@ -1,52 +1,80 @@
+import appContext from '../../appContext.js';
 import { deduplicate } from '../../deduplicate.js';
+import GenerationError from '../../GenerationError.js';
 import schemaToModel from '../../modelGeneration/schemaToModel.js';
 import typeboxImportStatements from '../../modelGeneration/typeboxImportStatements.js';
+import type Response from '../../openapi/Response.js';
 import type Responses from '../../openapi/Responses.js';
 import template from '../../templater.js';
 import writeSourceFile from '../../writeSourceFile.js';
 import { SUCCESS_CODES } from '../clientLib/HTTPStatusCode.js';
-import refUnsupported from './helpers/refUnsupported.js';
+
+export const buildResponseType = (name: string, response: Response) => {
+  const lines = [];
+  const imports = [];
+  let typeName = null;
+
+  const responseName = `Response${name}`;
+  if (!response.content) {
+    return null;
+  }
+
+  const responseSchema = response.content['application/json'];
+  if (responseSchema === undefined) {
+    // TODO: different types
+    lines.push(`type ${responseName} = unknown;`);
+    typeName = responseName;
+  } else {
+    const schema =
+      responseSchema.schema != null
+        ? schemaToModel(responseSchema.schema, responseName)
+        : undefined;
+
+    if (schema?.code !== undefined) {
+      lines.push(schema.code);
+      typeName = schema.typeName;
+    } else {
+      lines.push(`export type ${responseName} = unknown;`);
+      typeName = responseName;
+    }
+    if (schema?.imports) {
+      imports.push(...schema.imports);
+    }
+  }
+
+  return { typeName, code: lines.join('\n'), imports };
+};
+
+export type ResponseTypes = { responseCode: string; typename?: string; import?: string }[];
 
 const buildResponseTypes = (
   outFile: string,
   responseTypeName: string,
   errorResponseTypeName: string,
   responses: Responses,
-) => {
+): { types: ResponseTypes } => {
   const lines: string[] = [];
-  const extraImports: string[] = [];
-  const types: { typename?: string; responseCode: string }[] = [];
+  const imports: string[] = [];
+  const types: ResponseTypes = [];
 
   for (const [statusCode, response] of Object.entries(responses)) {
-    refUnsupported(response);
-
-    const responseName = `Response${statusCode}`;
-    if (!response.content) {
-      types.push({ typename: undefined /*responseName*/, responseCode: statusCode });
-      continue;
-    }
-
-    const responseSchema = response.content['application/json'];
-    if (responseSchema === undefined) {
-      // TODO: different types
-      lines.push(`type ${responseName} = unknown;`);
+    if ('$ref' in response) {
+      const r = appContext.responses.lookup(response.$ref);
+      if (r === undefined) {
+        throw new GenerationError(`Unresolved response reference ${response.$ref}`);
+      }
+      types.push({ responseCode: statusCode, typename: r.typeName, import: r.import });
+      imports.push(r.import);
     } else {
-      const schema =
-        responseSchema.schema != null
-          ? schemaToModel(responseSchema.schema, responseName)
-          : undefined;
-
-      if (schema?.code !== undefined) {
-        lines.push(schema.code);
+      const r = buildResponseType(statusCode === 'default' ? 'Default' : statusCode, response);
+      if (r == null) {
+        types.push({ responseCode: statusCode });
       } else {
-        lines.push(`export type ${responseName} = unknown;`);
-      }
-      if (schema) {
-        extraImports.push(...schema.imports);
-      }
-      types.push({ typename: schema?.typeName ?? responseName, responseCode: statusCode });
-      if (schema?.imports) {
-        extraImports.push(...schema.imports);
+        lines.push(r.code);
+        types.push({ responseCode: statusCode, typename: r.typeName });
+        if (r.imports) {
+          imports.push(...r.imports);
+        }
       }
     }
   }
@@ -76,7 +104,8 @@ const buildResponseTypes = (
           template.concat(
             '| {',
             ' response: Response;',
-            ` status: ${responseCode};`,
+            // "default" is a special openapi case that is not a number
+            ` status: ${responseCode === 'default' ? "'default'" : responseCode};`,
             typename && ` data: ${typename};`,
             ' }',
           ),
@@ -93,7 +122,7 @@ const buildResponseTypes = (
 
   writeSourceFile(
     outFile,
-    template.lines(...deduplicate([typeboxImportStatements, ...extraImports]), '', ...lines),
+    template.lines(...deduplicate([typeboxImportStatements, ...imports]), '', ...lines),
   );
 
   return { types };

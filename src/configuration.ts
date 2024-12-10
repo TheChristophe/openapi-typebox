@@ -1,7 +1,8 @@
 type Confirmation = {
-  throwOnError: boolean;
-
   outputDir: string;
+
+  strict: boolean;
+  compile: boolean;
 
   package?: {
     name: string;
@@ -12,7 +13,8 @@ type Confirmation = {
 };
 
 const configuration: Confirmation = {
-  throwOnError: true,
+  strict: false,
+  compile: false,
 
   outputDir: './client',
 };
