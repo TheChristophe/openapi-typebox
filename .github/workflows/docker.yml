@@ -2,9 +2,9 @@ name: Build new tag
 
 on:
   push:
-    branches: [ main, ci_docker-building ]
-    #tags:
-    #  - 'v*'
+    branches: [ main ]
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -29,12 +29,21 @@ jobs:
 
       - name: Push the latest Docker image
         uses: docker/build-push-action@v6
+        if: ${{ github.ref != 'refs/heads/main' }}
         with:
           push: true
           tags: ghcr.io/thechristophe/openapi-typebox:latest
 
       - name: Push the Docker image with the release tag
         uses: docker/build-push-action@v6
+        if: ${{ github.ref != 'refs/heads/main' }}
         with:
           push: true
-          tags: ghcr.io/thechristophe/openapi-typebox:${{ github.ref_name}}
+          tags: ghcr.io/thechristophe/openapi-typebox:${{ github.ref_name }}
+
+      - name: Push the Docker image with dev tag
+        uses: docker/build-push-action@v6
+        if: ${{ github.ref == 'refs/heads/main' }}
+        with:
+          push: true
+          tags: ghcr.io/thechristophe/openapi-typebox:dev
