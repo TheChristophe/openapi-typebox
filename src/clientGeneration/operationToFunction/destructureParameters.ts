@@ -1,8 +1,8 @@
 import type Parameter from '../../openapi/Parameter.js';
 import type RequestBody from '../../openapi/RequestBody.js';
+import template from '../../templater.js';
 import needsSanitization from './helpers/needsSanitization.js';
 import sanitizeVariableName from './helpers/sanitizeVariableName.js';
-import template from '../../templater.js';
 
 const destructureParameters = (parameters: Parameter[], requestBody?: RequestBody) => {
   if (parameters.length === 0 && requestBody == null) {
@@ -21,7 +21,7 @@ const destructureParameters = (parameters: Parameter[], requestBody?: RequestBod
             ? `['${parameter.name}']: ${sanitizeVariableName(parameter.name)},`
             : `${parameter.name},`,
         ),
-        '  },',
+        !parameters.some((p) => p.required) ? '  } = {},' : '  },',
       ),
 
     '  config',

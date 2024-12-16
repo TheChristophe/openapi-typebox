@@ -53,7 +53,10 @@ const buildParameterTypes = (
           },
         }),
       },
-      required: [...(requestBody ? ['body'] : []), ...(parameters.length > 0 ? ['params'] : [])],
+      required: [
+        ...(requestBody ? ['body'] : []),
+        ...(parameters.length > 0 && parameters.some((p) => p.required) ? ['params'] : []),
+      ],
     },
     typeName,
   );
