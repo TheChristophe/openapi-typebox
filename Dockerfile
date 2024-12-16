@@ -11,7 +11,6 @@ FROM base AS build
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 COPY ["eslint.config.js", ".prettierrc", "tsconfig.build.json", "tsconfig.json", "./"]
 COPY ["src", "src"]
-RUN pnpm install
 RUN pnpm run build
 
 FROM base AS prod-deps
