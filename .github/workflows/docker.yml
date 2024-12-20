@@ -11,7 +11,7 @@ jobs:
     #needs: release
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       actions: write
     steps:
@@ -40,6 +40,29 @@ jobs:
         with:
           push: true
           tags: ghcr.io/thechristophe/openapi-typebox:${{ github.ref_name }}
+
+      - name: Clone github action
+        if: ${{ github.ref != 'refs/heads/main' }}
+        uses: actions/checkout@v4
+        with:
+          repository: thechristophe/openapi-typebox-action
+          ref: 'main'
+          token: ${{ secrets.ACTION_REPO_PUSH_TOKEN }}
+          path: action-repo
+
+      - name: Update github action
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: |
+          pushd action-repo
+          git config user.name "GitHub Action"
+          git config user.email "<>"
+          sed -i -E "s;thechristophe/openapi-typebox:(dev|v.+)$;thechristophe/openapi-typebox:${{ github.ref_name }};g" action.yml
+          git add action.yml
+          git commit -m "${{ github.ref_name }}"
+          git tag "${{ github.ref_name }}"
+          git push
+          git push origin "${{ github.ref_name }}"
+          popd
 
       - name: Push the Docker image with dev tag
         uses: docker/build-push-action@v6
