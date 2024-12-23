@@ -14,7 +14,7 @@ const generateComponentIndex = (outDir: string) => {
     template.lines(
       ...Object.entries(appContext.schemas.index)
         .sort(([key1], [key2]) => (key1 < key2 ? -1 : key1 > key2 ? 1 : 0))
-        .map(([, schema]) => schema.import),
+        .map(([, schema]) => schema.import.replace('import', 'export')),
     ),
   );
 
