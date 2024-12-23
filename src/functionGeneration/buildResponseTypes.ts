@@ -1,13 +1,13 @@
-import appContext from '../../appContext.js';
-import { deduplicate } from '../../deduplicate.js';
-import GenerationError from '../../GenerationError.js';
-import schemaToModel from '../../modelGeneration/schemaToModel.js';
-import typeboxImportStatements from '../../modelGeneration/typeboxImportStatements.js';
-import type Response from '../../openapi/Response.js';
-import type Responses from '../../openapi/Responses.js';
-import template from '../../templater.js';
-import writeSourceFile from '../../writeSourceFile.js';
+import appContext from '../appContext.js';
 import { SUCCESS_CODES } from '../clientLib/HTTPStatusCode.js';
+import { deduplicate } from '../deduplicate.js';
+import GenerationError from '../GenerationError.js';
+import schemaToModel from '../modelGeneration/schemaToModel.js';
+import typeboxImportStatements from '../modelGeneration/typeboxImportStatements.js';
+import type Response from '../openapi/Response.js';
+import type Responses from '../openapi/Responses.js';
+import template from '../templater.js';
+import writeSourceFile from '../writeSourceFile.js';
 
 export const buildResponseType = (name: string, response: Response) => {
   const lines = [];

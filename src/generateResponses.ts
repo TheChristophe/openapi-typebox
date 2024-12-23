@@ -1,11 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import appContext from '../appContext.js';
-import type OpenApiSpec from '../openapi/index.js';
-import template from '../templater.js';
-import writeSourceFile from '../writeSourceFile.js';
-import { buildResponseType } from './operationToFunction/buildResponseTypes.js';
-import refUnsupported from './operationToFunction/helpers/refUnsupported.js';
+import appContext from './appContext.js';
+import { buildResponseType } from './functionGeneration/buildResponseTypes.js';
+import refUnsupported from './functionGeneration/helpers/refUnsupported.js';
+import type OpenApiSpec from './openapi/index.js';
+import template from './templater.js';
+import writeSourceFile from './writeSourceFile.js';
 
 const generateResponseIndex = (outDir: string) => {
   writeSourceFile(

@@ -1,4 +1,4 @@
-import type Parameter from '../../../openapi/Parameter.js';
+import type Parameter from '../../openapi/Parameter.js';
 import { InvalidParamError } from '../index.js';
 
 const substituteParams = (route: string, parameters: Parameter[]) => {

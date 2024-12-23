@@ -1,12 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import generateResponses from './clientGeneration/generateResponses.js';
-import generateSchemas from './clientGeneration/generateSchemas.js';
-import operationToFunction, {
-  FunctionMetadata,
-} from './clientGeneration/operationToFunction/index.js';
 import configuration from './configuration.js';
+import operationToFunction, { FunctionMetadata } from './functionGeneration/index.js';
+import generateResponses from './generateResponses.js';
+import generateSchemas from './generateSchemas.js';
 import type OpenApiSpec from './openapi/index.js';
 import { OpenApiMethods } from './openapi/PathItem.js';
 import sanitizeBulk from './sanitizeBulk.js';

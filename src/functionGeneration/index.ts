@@ -1,13 +1,13 @@
-import type Operation from '../../openapi/Operation.js';
-import type Parameter from '../../openapi/Parameter.js';
-import type Reference from '../../openapi/Reference.js';
-import type RequestBody from '../../openapi/RequestBody.js';
-import writeSourceFile from '../../writeSourceFile.js';
+import type Operation from '../openapi/Operation.js';
+import type Parameter from '../openapi/Parameter.js';
+import type Reference from '../openapi/Reference.js';
+import type RequestBody from '../openapi/RequestBody.js';
+import writeSourceFile from '../writeSourceFile.js';
 
-import { deduplicate } from '../../deduplicate.js';
-import GenerationError from '../../GenerationError.js';
-import typeboxImportStatements from '../../modelGeneration/typeboxImportStatements.js';
-import template from '../../templater.js';
+import { deduplicate } from '../deduplicate.js';
+import GenerationError from '../GenerationError.js';
+import typeboxImportStatements from '../modelGeneration/typeboxImportStatements.js';
+import template from '../templater.js';
 import buildParameterTypes from './buildParameterTypes.js';
 import buildResponseReturn from './buildResponseReturn.js';
 import buildResponseTypes, { ResponseTypes } from './buildResponseTypes.js';

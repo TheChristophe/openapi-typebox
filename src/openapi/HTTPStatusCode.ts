@@ -2,10 +2,10 @@
  * https://swagger.io/specification/#http-status-codes
  */
 export {
-  type default,
-  type HTTPInformational,
-  type HTTPSuccess,
-  type HTTPRedirection,
   type HTTPClientError,
+  type HTTPInformational,
+  type HTTPRedirection,
   type HTTPServerError,
-} from '../clientGeneration/clientLib/HTTPStatusCode.js';
+  type HTTPSuccess,
+  type default,
+} from '../clientLib/HTTPStatusCode.js';

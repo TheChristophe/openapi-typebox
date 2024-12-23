@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import appContext from '../appContext.js';
-import MissingReferenceError from '../modelGeneration/MissingReferenceError.js';
-import schemaToModel from '../modelGeneration/schemaToModel.js';
-import type OpenApiSpec from '../openapi/index.js';
-import type JsonSchema from '../openapi/JsonSchema.js';
-import template from '../templater.js';
-import writeSourceFile from '../writeSourceFile.js';
+import appContext from './appContext.js';
+import MissingReferenceError from './modelGeneration/MissingReferenceError.js';
+import schemaToModel from './modelGeneration/schemaToModel.js';
+import type OpenApiSpec from './openapi/index.js';
+import type JsonSchema from './openapi/JsonSchema.js';
+import template from './templater.js';
+import writeSourceFile from './writeSourceFile.js';
 
 const generateComponentIndex = (outDir: string) => {
   writeSourceFile(
@@ -38,11 +38,11 @@ const generateSchemas = (
 
   writeSourceFile(
     `${outDir}/_oneOf.ts`,
-    fs.readFileSync(new URL(import.meta.resolve('../clientLib/_oneOf.ts')), 'utf-8'),
+    fs.readFileSync(new URL(import.meta.resolve('./clientLib/_oneOf.ts')), 'utf-8'),
   );
   writeSourceFile(
     `${outDir}/HTTPStatusCode.ts`,
-    fs.readFileSync(new URL(import.meta.resolve('../clientLib/HTTPStatusCode.ts')), 'utf-8'),
+    fs.readFileSync(new URL(import.meta.resolve('./clientLib/HTTPStatusCode.ts')), 'utf-8'),
   );
   files.push(`${outDir}/_oneOf.ts`, `${outDir}/HTTPStatusCode.ts`);
 

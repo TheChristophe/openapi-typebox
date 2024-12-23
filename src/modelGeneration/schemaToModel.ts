@@ -6,10 +6,10 @@ import {
 } from 'json-schema';
 import GenerationError from '../GenerationError.js';
 import appContext from '../appContext.js';
-import sanitizeVariableName from '../clientGeneration/operationToFunction/helpers/sanitizeVariableName.js';
-import { uppercaseFirst } from '../clientGeneration/operationToFunction/helpers/stringManipulation.js';
 import configuration from '../configuration.js';
 import { deduplicate } from '../deduplicate.js';
+import sanitizeVariableName from '../functionGeneration/helpers/sanitizeVariableName.js';
+import { uppercaseFirst } from '../functionGeneration/helpers/stringManipulation.js';
 import template from '../templater.js';
 import MissingReferenceError from './MissingReferenceError.js';
 import { CodegenSlice, joinSubSlices } from './joinSlices.js';

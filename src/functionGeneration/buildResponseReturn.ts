@@ -1,6 +1,6 @@
-import appContext from '../../appContext.js';
-import type Responses from '../../openapi/Responses.js';
-import template from '../../templater.js';
+import appContext from '../appContext.js';
+import type Responses from '../openapi/Responses.js';
+import template from '../templater.js';
 import { ResponseTypes } from './buildResponseTypes.js';
 
 const buildResponseReturn = (
