@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import appContext from './appContext.js';
+import schemaToModel from './modelGeneration/index.js';
 import MissingReferenceError from './modelGeneration/MissingReferenceError.js';
-import schemaToModel from './modelGeneration/schemaToModel.js';
 import type OpenApiSpec from './openapi/index.js';
 import type JsonSchema from './openapi/JsonSchema.js';
 import template from './templater.js';
@@ -54,7 +54,7 @@ const generateSchemas = (
     for (let i = openSet.length - 1; i >= 0; i--) {
       const [key, schema] = openSet[i];
       try {
-        const { typeName, validatorName, imports, code } = schemaToModel(schema, key);
+        const { typeName, validatorName, imports, code, hasEnum } = schemaToModel(schema, key);
         const destFile = `${outDir}/models/${typeName}.ts`;
 
         writeSourceFile(destFile, template.lines(...imports, '', code));
@@ -64,7 +64,7 @@ const generateSchemas = (
           typeName,
           validatorName,
           sourceFile: destFile,
-          import: `import { type ${typeName}, ${validatorName} } from './${typeName}.js';`,
+          import: `import { ${!hasEnum ? 'type' : ''} ${typeName}, ${validatorName} } from './${typeName}.js';`,
           raw: schema,
         });
         progressed = true;

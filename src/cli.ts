@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import meow from 'meow';
 import configuration from './configuration.js';
-import openapiToApiClient from './openapiToApiClient.js';
+import openapiToApiClient from './main.js';
 
 const cli = meow(
   `

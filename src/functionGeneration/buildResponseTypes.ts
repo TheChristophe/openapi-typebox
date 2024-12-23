@@ -2,7 +2,7 @@ import appContext from '../appContext.js';
 import { SUCCESS_CODES } from '../clientLib/HTTPStatusCode.js';
 import { deduplicate } from '../deduplicate.js';
 import GenerationError from '../GenerationError.js';
-import schemaToModel from '../modelGeneration/schemaToModel.js';
+import schemaToModel from '../modelGeneration/index.js';
 import typeboxImportStatements from '../modelGeneration/typeboxImportStatements.js';
 import type Response from '../openapi/Response.js';
 import type Responses from '../openapi/Responses.js';

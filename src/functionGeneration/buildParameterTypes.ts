@@ -1,6 +1,6 @@
 import { JSONSchema7Definition } from 'json-schema';
 import { deduplicate } from '../deduplicate.js';
-import schemaToModel from '../modelGeneration/schemaToModel.js';
+import schemaToModel from '../modelGeneration/index.js';
 import type Parameter from '../openapi/Parameter.js';
 import type RequestBody from '../openapi/RequestBody.js';
 import template from '../templater.js';
