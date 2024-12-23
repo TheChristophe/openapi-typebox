@@ -17,6 +17,7 @@ const typeboxImportStatements = template.lines(
   '  type TArray,',
   '  type TNumber,',
   '  type TOptional,',
+  '  type TNull,',
   '  /* eslint-enable @typescript-eslint/no-unused-vars,unused-imports/no-unused-imports */',
   "} from '@sinclair/typebox';",
   "import { Value } from '@sinclair/typebox/value';",
