@@ -39,10 +39,11 @@ const sanitizeModelName = (name: string) => {
  */
 const camelize = (str: string) =>
   str
-    .replaceAll(/[^a-zA-Z0-9_\s]/g, '')
+    .replaceAll(/[^a-zA-Z0-9_\s]/g, '') // remove weird chars
+    .replaceAll('_', ' ') // snake_case
     .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) =>
       index === 0 ? word.toLowerCase() : word.toUpperCase(),
-    )
+    ) // w => w, ␣w => W
     .replaceAll(/\s+/g, '');
 
 const valueToEnumEntry = (value: JSONSchema7Type) => {
