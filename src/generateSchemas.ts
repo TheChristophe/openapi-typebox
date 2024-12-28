@@ -90,7 +90,7 @@ const generateSchemas = (
       for (const e of errors) {
         console.error(e.message);
       }
-      console.log(appContext.schemas.index);
+      //console.log(appContext.schemas.index);
       process.exit(1);
     }
   }

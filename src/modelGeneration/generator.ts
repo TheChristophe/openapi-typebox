@@ -152,7 +152,7 @@ const generator = (emitter: CodeEmitter) => {
     const { code, imports } = joinSubSlices(schema.allOf.map(generate));
 
     return {
-      code: emitter.oneOf(code, filterExtraOptions(schema)),
+      code: emitter.allOf(code, filterExtraOptions(schema)),
       imports: imports,
     };
   };
