@@ -1,8 +1,8 @@
 import type Operation from './Operation.js';
 import type Parameter from './Parameter.js';
+import type PRecord from './PRecord.js';
 import type Reference from './Reference.js';
 import type Server from './Server.js';
-import type PRecord from './PRecord.js';
 
 export const OpenApiMethods = {
   GET: 'get',
@@ -14,7 +14,6 @@ export const OpenApiMethods = {
   PATH: 'patch',
   TRACE: 'trace',
 } as const;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 type OpenApiMethod = (typeof OpenApiMethods)[keyof typeof OpenApiMethods];
 type PathItem = {
   // TODO: unsupported

@@ -5,6 +5,7 @@ import configuration from './configuration.js';
 import operationToFunction, { FunctionMetadata } from './functionGeneration/index.js';
 import generateResponses from './generateResponses.js';
 import generateSchemas from './generateSchemas.js';
+import NotImplementedError from './NotImplementedError.js';
 import type OpenApiSpec from './openapi/index.js';
 import { OpenApiMethods } from './openapi/PathItem.js';
 import sanitizeBulk from './sanitizeBulk.js';
@@ -35,6 +36,14 @@ const processPaths = (
       const operation = pathItem[method];
       if (operation == null) {
         continue;
+      }
+
+      if (pathItem['$ref'] !== undefined) {
+        throw new NotImplementedError("PathItem['$ref']");
+      }
+
+      if (pathItem['parameters'] !== undefined) {
+        operation.parameters = (operation.parameters ?? []).concat(pathItem['parameters']);
       }
 
       functions.push(operationToFunction(route, method, operation, outDir));
