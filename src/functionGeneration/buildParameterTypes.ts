@@ -34,43 +34,88 @@ const buildParameterTypes = (
   parameters: Parameter[] = [],
   requestBody?: RequestBody,
 ) => {
-  // for now just mock a schema
-  // TODO: write own generator?
-  const schema = schemaToModel(
-    {
-      type: 'object',
-      properties: {
-        ...(requestBody !== undefined && {
-          body: requestBody.content['application/json']?.schema ?? { type: 'object' },
-        }),
-        ...(parameters.length > 0 && {
-          params: {
-            type: 'object',
-            properties: {
-              ...Object.fromEntries(parameters.map(parameterSchema)),
-            },
-            required: [...parameters.filter((p) => p.required).map((p) => p.name)],
-          },
-        }),
+  let contentType: string | null;
+  // no body
+  if (requestBody === undefined || requestBody.content === undefined) {
+    contentType = null;
+  }
+  // json
+  else if (requestBody?.content['application/json'] !== undefined) {
+    contentType = 'application/json';
+  }
+  // url encoded
+  else if (requestBody?.content['application/x-www-form-urlencoded'] !== undefined) {
+    contentType = 'application/x-www-form-urlencoded';
+  }
+  // form data
+  else if (requestBody?.content['multipart/form-data'] !== undefined) {
+    contentType = 'multipart/form-data';
+  }
+  // binary
+  else if (requestBody?.content['application/octet-stream'] !== undefined) {
+    contentType = 'application/octet-stream';
+  }
+  // unknown
+  else {
+    contentType = Object.keys(requestBody.content)[0];
+    console.warn('Unknown request body mime-type', contentType);
+  }
+  const lines = [];
+
+  let bodyT = null;
+  if (requestBody) {
+    if (
+      contentType === 'application/json' ||
+      contentType === 'application/x-www-form-urlencoded' ||
+      contentType === 'multipart/form-data'
+    ) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const schema = schemaToModel(requestBody.content[contentType]!.schema!, `${typeName}Body`);
+      lines.push(...deduplicate(schema.imports), '', schema.code);
+      bodyT = schema.typeName;
+    } else if (contentType === 'application/octet-stream') {
+      bodyT = 'Blob';
+    } else {
+      bodyT = 'unknown';
+    }
+  }
+
+  let paramsT = null;
+  if (parameters.length > 0) {
+    const schema = schemaToModel(
+      {
+        type: 'object',
+        properties: Object.fromEntries(parameters.map(parameterSchema)),
+        required: parameters.filter((p) => p.required).map((p) => p.name),
       },
-      required: [
-        ...(requestBody ? ['body'] : []),
-        ...(parameters.length > 0 && parameters.some((p) => p.required) ? ['params'] : []),
-      ],
-    },
-    typeName,
-  );
+      `${typeName}Params`,
+    );
+    lines.push(...deduplicate(schema.imports), '', schema.code);
+    paramsT = schema.typeName;
+  }
+
+  if (bodyT !== null || paramsT !== null) {
+    lines.push(
+      template.lines(
+        `type ${typeName} = {`,
+        bodyT !== null && `  body: ${bodyT};`,
+        paramsT !== null &&
+          `  params${parameters.length > 0 && parameters.some((p) => p.required) ? '' : '?'}: ${paramsT},`,
+        '};',
+      ),
+    );
+  } else {
+    lines.push(`type ${typeName} = unknown;`);
+  }
 
   writeSourceFile(
     outFile,
-    template.lines(
-      ...deduplicate(schema.imports),
-      '',
-      schema.code,
-      '',
-      `export default ${schema.typeName};`,
-    ),
+    template.lines(...deduplicate(lines), '', `export default ${typeName};`),
   );
+
+  return {
+    contentType,
+  };
 };
 
 export default buildParameterTypes;

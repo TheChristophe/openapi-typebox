@@ -117,14 +117,17 @@ const operationToFunction = (
 
   const parameterTypeName = `${uppercaseFirst(operationName)}Params`;
   const takesParameters = requestBody != null || parameters.length > 0;
+  const requiredParameters = requestBody != null || parameters.some((param) => param.required);
 
+  let bodyContentType: string | null = null;
   if (takesParameters) {
-    buildParameterTypes(
+    const { contentType } = buildParameterTypes(
       `${outDir}/functions/${operationName}.parameters.ts`,
       parameterTypeName,
       parameters,
       requestBody,
     );
+    bodyContentType = contentType;
     lines.push(`import type ${parameterTypeName} from './${operationName}.parameters.js';`, '');
   }
 
@@ -155,7 +158,7 @@ const operationToFunction = (
       template.concat(
         `const ${operationName}: ApiFunction<`,
         takesParameters ? parameterTypeName : 'undefined',
-        takesParameters
+        requiredParameters
           ? `, ${responseTypeName}> = async (parameters) => {`
           : `, ${responseTypeName}> = async (parameters = {}) => {`,
       ),
@@ -172,7 +175,21 @@ const operationToFunction = (
         // eslint-disable-next-line no-template-curly-in-string
         "  headers.set('authorization', `Bearer ${config.auth.bearer}`);",
         '}',
+
+        (bodyContentType === 'application/json' ||
+          bodyContentType === 'application/x-www-form-urlencoded' ||
+          bodyContentType === 'multipart/form-data' ||
+          bodyContentType === 'application/octet-stream') &&
+          `headers.set("Content-Type", "${bodyContentType}");`,
         '',
+
+        bodyContentType === 'multipart/form-data' &&
+          template.lines(
+            'const multipart = new FormData();',
+            'for (const [key, value] of Object.entries(parameters.body) {',
+            '  body.append(key, value);',
+            '}',
+          ),
 
         'const response = await localFetch(',
 
@@ -199,9 +216,11 @@ const operationToFunction = (
         `method: '${method.toUpperCase()}',`,
         'headers,',
 
-        // TODO: non-json
-        // TODO: how to handle multiple different request types?
-        requestBody && 'body: JSON.stringify(body),',
+        bodyContentType === 'application/json' && 'body: JSON.stringify(body),',
+        bodyContentType === 'application/x-www-form-urlencoded' &&
+          'body: new URLSearchParams(body).toString(),',
+        bodyContentType === 'multipart/form-data' && 'body: multipart,',
+        bodyContentType === 'application/octet-stream' && 'body: body,',
 
         // TODO: headers
 
