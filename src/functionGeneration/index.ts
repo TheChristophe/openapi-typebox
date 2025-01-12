@@ -118,6 +118,7 @@ const operationToFunction = (
   const parameterTypeName = `${uppercaseFirst(operationName)}Params`;
   const takesParameters = requestBody != null || parameters.length > 0;
   const requiredParameters = requestBody != null || parameters.some((param) => param.required);
+  let parameterTypeImport = null;
 
   let bodyContentType: string | null = null;
   if (takesParameters) {
@@ -128,18 +129,21 @@ const operationToFunction = (
       requestBody,
     );
     bodyContentType = contentType;
-    lines.push(`import type ${parameterTypeName} from './${operationName}.parameters.js';`, '');
+    parameterTypeImport = {
+      typename: parameterTypeName,
+      import: `import type ${parameterTypeName} from './${operationName}.parameters.js';`,
+    };
+    lines.push(parameterTypeImport.import, '');
   }
 
   const responseTypeName = `${uppercaseFirst(operationName)}Response`;
-  const errorType = `${uppercaseFirst(operationName)}Error`;
   let responseTypes: ResponseTypes | null = null;
   if (operation.responses && Object.keys(operation.responses).length > 0) {
     const { types } = buildResponseTypes(
       `${outDir}/functions/${operationName}.responses.ts`,
       responseTypeName,
-      errorType,
       operation.responses,
+      parameterTypeImport,
     );
     responseTypes = types;
     lines.push(
@@ -191,6 +195,16 @@ const operationToFunction = (
             '}',
           ),
 
+        '',
+        `const method = '${method.toUpperCase()}';`,
+        'const requestMeta = {',
+        '  url,',
+        '  method,',
+        operation.operationId != null && `  operationId: '${operation.operationId}',`,
+        (requestBody != null || parameters.length > 0) && '  parameters,',
+        '};',
+        '',
+
         'const response = await localFetch(',
 
         template.concat(
@@ -213,7 +227,7 @@ const operationToFunction = (
 
         '{',
         '...config?.defaultParams,',
-        `method: '${method.toUpperCase()}',`,
+        'method,',
         'headers,',
 
         bodyContentType === 'application/json' && 'body: JSON.stringify(body),',
@@ -228,7 +242,12 @@ const operationToFunction = (
         '',
 
         operation.responses == null &&
-          template.lines('return ({', 'status: response.status,', `} as ${errorType});`),
+          template.lines(
+            'return ({',
+            'status: response.status,',
+            'request: requestMeta,',
+            `} as ${responseTypeName});`,
+          ),
 
         operation.responses != null &&
           buildResponseReturn(operationName, operation.responses, responseTypes),

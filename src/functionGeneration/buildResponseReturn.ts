@@ -48,7 +48,15 @@ const buildResponseReturn = (
     const responseTypename = responseTypeNames[statusCode];
     // TODO: how do make responseTypename or content check unnecessary
     if (resolvedResponse.content === undefined || !responseTypename) {
-      lines.push(template.lines('return {', `  status: ${statusCode},`, '  response,', '};'));
+      lines.push(
+        template.lines(
+          'return {',
+          `  status: ${statusCode},`,
+          '  response,',
+          '  request: requestMeta,',
+          '};',
+        ),
+      );
       continue;
     }
 
@@ -61,6 +69,7 @@ const buildResponseReturn = (
           `  status: ${statusCode},`,
           `  data: await response.blob() as ${responseTypename},`,
           '  response,',
+          '  request: requestMeta,',
           '};',
         ),
       );
@@ -71,6 +80,7 @@ const buildResponseReturn = (
           `  status: ${statusCode},`,
           `  data: await response.json() as ${responseTypename},`,
           '  response,',
+          '  request: requestMeta,',
           '};',
         ),
       );
@@ -88,16 +98,27 @@ const buildResponseReturn = (
         "    status: 'default',",
         `    data: await response.json() as ${defaultResponseTypename},`,
         '    response,',
+        '    request: requestMeta,',
         '  };',
         '}',
         'return {',
         '  status: -1,',
         '  response,',
+        '  request: requestMeta,',
         '};',
       ),
     );
   } else {
-    lines.push(template.lines('default:', 'return {', '  status: -1,', '  response,', '};'));
+    lines.push(
+      template.lines(
+        'default:',
+        'return {',
+        '  status: -1,',
+        '  response,',
+        '  request: requestMeta,',
+        '};',
+      ),
+    );
   }
 
   lines.push('}');

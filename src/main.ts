@@ -20,7 +20,7 @@ const processPaths = (
   fs.mkdirSync(path.join(outDir, 'functions'), { recursive: true });
   const files: string[] = [];
 
-  const sharedFiles = ['clientConfig.ts', 'ApiError.ts', 'apiFunction.ts'];
+  const sharedFiles = ['clientConfig.ts', 'ApiError.ts', 'apiFunction.ts', 'request.ts'];
   for (const file of sharedFiles) {
     writeSourceFile(
       `${outDir}/${file}`,

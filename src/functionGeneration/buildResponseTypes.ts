@@ -31,13 +31,13 @@ export const buildResponseType = (name: string, response: Response) => {
         : undefined;
 
     if (schema?.code !== undefined) {
-      lines.push(schema.code);
+      lines.push(schema.code, '');
       typeName = schema.typeName;
     } else {
-      lines.push(`export type ${responseName} = unknown;`);
+      lines.push(`export type ${responseName} = unknown;`, '');
       typeName = responseName;
     }
-    if (schema?.imports) {
+    if (schema) {
       imports.push(...schema.imports);
     }
   }
@@ -50,11 +50,14 @@ export type ResponseTypes = { responseCode: string; typename?: string; import?: 
 const buildResponseTypes = (
   outFile: string,
   responseTypeName: string,
-  errorResponseTypeName: string,
   responses: Responses,
+  parametersT: { typename: string; import: string } | null,
 ): { types: ResponseTypes } => {
   const lines: string[] = [];
-  const imports: string[] = [];
+  const imports: string[] = ["import { type RequestMeta } from '../request.js';"];
+  if (parametersT !== null) {
+    imports.push(parametersT.import);
+  }
   const types: ResponseTypes = [];
 
   for (const [statusCode, response] of Object.entries(responses)) {
@@ -79,42 +82,43 @@ const buildResponseTypes = (
     }
   }
 
-  const successResponse = 'ResponseOk';
-  const errorResponse = errorResponseTypeName;
+  if (parametersT) {
+    lines.push(`type Request = RequestMeta & { parameters: ${parametersT.typename} };`);
+  } else {
+    lines.push('type Request = RequestMeta;');
+  }
+
+  lines.push(`type ${responseTypeName} =`);
 
   lines.push(
     template.lines(
-      `type ${successResponse} =`,
       types
         .filter(({ responseCode }) => (SUCCESS_CODES as number[]).includes(+responseCode))
         .map(({ responseCode, typename }) =>
           template.concat(
             '| {',
             ' response: Response;',
+            ' request: Request;',
             ` status: ${responseCode};`,
             typename && ` data: ${typename};`,
             ' }',
           ),
         ),
-      ';',
-      `type ${errorResponse} =`,
       types
         .filter(({ responseCode }) => !(SUCCESS_CODES as number[]).includes(+responseCode))
         .map(({ responseCode, typename }) =>
           template.concat(
             '| {',
             ' response: Response;',
+            ' request: Request;',
             // "default" is a special openapi case that is not a number
             ` status: ${responseCode === 'default' ? "'default'" : responseCode};`,
             typename && ` data: ${typename};`,
             ' }',
           ),
         ),
-      ' | { response: Response; status: -1; }',
+      ' | { response: Response; request: Request; status: -1; }',
       ';',
-      '',
-
-      `type ${responseTypeName} = ${successResponse} | ${errorResponse};`,
       '',
       `export default ${responseTypeName};`,
     ),
