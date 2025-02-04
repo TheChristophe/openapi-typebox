@@ -1,6 +1,6 @@
 {
   "name": "@thechristophe/openapi-typebox",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "bin": "src/cli.js",
   "repository": {
     "type": "git",
@@ -56,5 +56,5 @@
     "dist/",
     "README.md"
   ],
-  "packageManager": "pnpm@9.15.0+sha512.76e2379760a4328ec4415815bcd6628dee727af3779aaa4c914e3944156c4299921a89f976381ee107d41f12cfa4b66681ca9c718f0668fa0831ed4c6d8ba56c"
+  "packageManager": "pnpm@10.2.0+sha512.0d27364e0139c6aadeed65ada153135e0ca96c8da42123bd50047f961339dc7a758fc2e944b428f52be570d1bd3372455c1c65fa2e7aa0bfbf931190f9552001"
 }
