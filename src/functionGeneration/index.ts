@@ -7,6 +7,7 @@ import writeSourceFile from '../writeSourceFile.js';
 import { deduplicate } from '../deduplicate.js';
 import GenerationError from '../GenerationError.js';
 import typeboxImportStatements from '../modelGeneration/typeboxImportStatements.js';
+import { sanitizeVariableName, uppercaseFirst } from '../sanitization.js';
 import template from '../templater.js';
 import buildParameterTypes from './buildParameterTypes.js';
 import buildResponseReturn from './buildResponseReturn.js';
@@ -16,8 +17,6 @@ import destructureParameters from './destructureParameters.js';
 import commentSanitize from './helpers/commentSanitize.js';
 import refUnsupported from './helpers/refUnsupported.js';
 import routeToOperationName from './helpers/routeToOperationName.js';
-import sanitizeVariableName from './helpers/sanitizeVariableName.js';
-import { uppercaseFirst } from './helpers/stringManipulation.js';
 
 export class InvalidParamError extends Error {}
 

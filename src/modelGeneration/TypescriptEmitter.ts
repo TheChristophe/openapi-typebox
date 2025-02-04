@@ -1,3 +1,4 @@
+import { needsSanitization } from '../sanitization.js';
 import template from '../templater.js';
 import CodeEmitter, { Options } from './CodeEmitter.js';
 
@@ -35,6 +36,10 @@ class TypescriptEmitter implements CodeEmitter {
   }
 
   objectChild(key: string, element: string, required?: boolean) {
+    if (needsSanitization(key)) {
+      // TODO: this still seems unsafe
+      key = `'${key.replaceAll("'", "\\'")}'`;
+    }
     return template.lines(`${key}${required ? '' : '?'}: ${element}`);
   }
 

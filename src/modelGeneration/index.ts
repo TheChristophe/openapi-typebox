@@ -1,8 +1,7 @@
 import { type JSONSchema7Definition, JSONSchema7Type } from 'json-schema';
 import GenerationError from '../GenerationError.js';
 import { deduplicate } from '../deduplicate.js';
-import sanitizeVariableName from '../functionGeneration/helpers/sanitizeVariableName.js';
-import { uppercaseFirst } from '../functionGeneration/helpers/stringManipulation.js';
+import { camelize, sanitizeVariableName, uppercaseFirst } from '../sanitization.js';
 import template from '../templater.js';
 import TypeboxEmitter from './TypeboxEmitter.js';
 import TypescriptEmitter from './TypescriptEmitter.js';
@@ -32,19 +31,6 @@ const sanitizeModelName = (name: string) => {
   }
   return name;
 };
-
-/**
- * https://stackoverflow.com/a/2970667
- * @param str
- */
-const camelize = (str: string) =>
-  str
-    .replaceAll(/[^a-zA-Z0-9_\s]/g, '') // remove weird chars
-    .replaceAll('_', ' ') // snake_case
-    .replace(/(?:^\w|[A-Z]|\b\w)/g, (word, index) =>
-      index === 0 ? word.toLowerCase() : word.toUpperCase(),
-    ) // w => w, ␣w => W
-    .replaceAll(/\s+/g, '');
 
 const valueToEnumEntry = (value: JSONSchema7Type) => {
   if (value === null) {

@@ -1,4 +1,4 @@
-import { lowercaseFirst, toCamelCase, uppercaseFirst } from './stringManipulation.js';
+import { lowercaseFirst, toCamelCase, uppercaseFirst } from '../../sanitization.js';
 
 /**
  * Convert a route and method to a camelCase operation name
