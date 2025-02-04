@@ -158,12 +158,15 @@ const operationToFunction = (
   lines.push(
     template.lines(
       buildJsDoc(operation),
+
       template.concat(
-        `const ${operationName}: ApiFunction<`,
-        takesParameters ? parameterTypeName : 'undefined',
-        requiredParameters
-          ? `, ${responseTypeName}> = async (parameters) => {`
-          : `, ${responseTypeName}> = async (parameters = {}) => {`,
+        `const ${operationName} = async (`,
+        'parameters',
+        !requiredParameters && '?',
+        ':',
+        takesParameters && `${parameterTypeName} &`,
+        '{ config?: ConfigOverrides }',
+        `): Promise<${responseTypeName}> => {`,
       ),
 
       template.lines(
