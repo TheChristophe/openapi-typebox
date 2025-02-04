@@ -12,7 +12,7 @@ const substituteParams = (route: string, parameters: Parameter[]) => {
       // eslint-disable-next-line prefer-template
       '{' + param.name + '}',
       // eslint-disable-next-line prefer-template
-      '${' + param.name + '.toString()}',
+      '${encodeURIComponent(' + param.name + '.toString())}',
     );
   }
   return route;
