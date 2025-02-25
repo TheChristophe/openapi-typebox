@@ -162,10 +162,10 @@ const operationToFunction = (
       template.concat(
         `const ${operationName} = async (`,
         'parameters',
-        !requiredParameters && '?',
         ':',
         takesParameters && `${parameterTypeName} &`,
         '{ config?: ConfigOverrides }',
+        !requiredParameters && '= {}',
         `): Promise<${responseTypeName}> => {`,
       ),
 
