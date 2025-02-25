@@ -3,8 +3,8 @@ import GenerationError from '../GenerationError.js';
 import { deduplicate } from '../deduplicate.js';
 import { camelize, sanitizeVariableName, uppercaseFirst } from '../sanitization.js';
 import template from '../templater.js';
-import TypeboxEmitter from './TypeboxEmitter.js';
-import TypescriptEmitter from './TypescriptEmitter.js';
+import TypeboxEmitter from './emitting/TypeboxEmitter.js';
+import TypescriptEmitter from './emitting/TypescriptEmitter.js';
 import generator from './generator.js';
 import { EnumSchema, isEnumSchema } from './schema-matchers.js';
 import typeboxImportStatements from './typeboxImportStatements.js';
@@ -27,9 +27,9 @@ const sanitizeModelName = (name: string) => {
 
   // TODO: this is a limited subset of actually valid characters
   if (!name[0].match(/[A-Za-z_$]/)) {
-    return `API${name}`;
+    return `API${uppercaseFirst(camelize(name))}`;
   }
-  return name;
+  return uppercaseFirst(camelize(name));
 };
 
 const valueToEnumEntry = (value: JSONSchema7Type) => {
@@ -60,7 +60,7 @@ const schemaToModel = (
   jsonSchema: JSONSchema7Definition,
   name: string = generateTypeName(jsonSchema),
 ) => {
-  const typeName = uppercaseFirst(sanitizeModelName(name));
+  const typeName = sanitizeModelName(name);
   if (typeName.length === 0) {
     throw new GenerationError('Tried generating a model with empty name (no title)');
   }

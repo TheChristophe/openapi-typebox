@@ -1,5 +1,5 @@
-import type JsonSchema from './openapi/JsonSchema.js';
-import type Response from './openapi/Response.js';
+import { type JSONSchema7 } from 'json-schema';
+import type Response from '../openapiClient/openapi/Response.js';
 
 /**
  * Singleton
@@ -27,7 +27,7 @@ type SchemaEntry = {
    *
    * TODO: carry elsewhere?
    */
-  raw: JsonSchema;
+  raw: JSONSchema7;
 };
 type ResponseEntry = {
   /**
@@ -59,8 +59,8 @@ const referenceIndex = <ReferenceT>() => {
   return { index, add: insert, lookup };
 };
 
-export const appContext = {
+export const context = {
   schemas: referenceIndex<SchemaEntry>(),
   responses: referenceIndex<ResponseEntry>(),
 };
-export default appContext;
+export default context;

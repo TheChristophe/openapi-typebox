@@ -1,13 +1,13 @@
-import appContext from '../appContext.js';
-import { SUCCESS_CODES } from '../clientLib/HTTPStatusCode.js';
-import { deduplicate } from '../deduplicate.js';
-import GenerationError from '../GenerationError.js';
-import schemaToModel from '../modelGeneration/index.js';
-import typeboxImportStatements from '../modelGeneration/typeboxImportStatements.js';
+import context from '../../shared/context.js';
+import { deduplicate } from '../../shared/deduplicate.js';
+import GenerationError from '../../shared/GenerationError.js';
+import schemaToModel from '../../shared/modelGeneration/index.js';
+import typeboxImportStatements from '../../shared/modelGeneration/typeboxImportStatements.js';
+import template from '../../shared/templater.js';
+import writeSourceFile from '../../shared/writeSourceFile.js';
 import type Response from '../openapi/Response.js';
 import type Responses from '../openapi/Responses.js';
-import template from '../templater.js';
-import writeSourceFile from '../writeSourceFile.js';
+import { SUCCESS_CODES } from '../output/HTTPStatusCode.js';
 
 export const buildResponseType = (name: string, response: Response) => {
   const lines = [];
@@ -62,7 +62,7 @@ const buildResponseTypes = (
 
   for (const [statusCode, response] of Object.entries(responses)) {
     if ('$ref' in response) {
-      const r = appContext.responses.lookup(response.$ref);
+      const r = context.responses.lookup(response.$ref);
       if (r === undefined) {
         throw new GenerationError(`Unresolved response reference ${response.$ref}`);
       }

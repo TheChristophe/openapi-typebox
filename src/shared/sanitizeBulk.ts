@@ -1,9 +1,9 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import { promisify } from 'node:util';
 import * as prettier from 'prettier';
 import * as ts from 'typescript';
 import configuration from './configuration.js';
+import walk from './walk.js';
 
 const prettierConfigPath = await prettier.resolveConfigFile();
 const prettierConfig = (prettierConfigPath &&
@@ -12,17 +12,6 @@ const prettierConfig = (prettierConfigPath &&
   singleQuote: true,
   printWidth: 100,
 };
-
-async function* walk(dir: string): AsyncIterableIterator<string> {
-  for await (const d of await fs.promises.opendir(dir)) {
-    const entry = path.join(dir, d.name);
-    if (d.isDirectory()) {
-      yield* walk(entry);
-    } else if (d.isFile()) {
-      yield entry;
-    }
-  }
-}
 
 const write = promisify(fs.writeFile);
 const read = promisify(fs.readFile);

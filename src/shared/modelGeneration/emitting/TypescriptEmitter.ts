@@ -1,5 +1,5 @@
-import { needsSanitization } from '../sanitization.js';
-import template from '../templater.js';
+import { needsSanitization } from '../../sanitization.js';
+import template from '../../templater.js';
 import CodeEmitter, { Options } from './CodeEmitter.js';
 
 class TypescriptEmitter implements CodeEmitter {

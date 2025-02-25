@@ -1,4 +1,4 @@
-import type HTTPStatusCode from './HTTPStatusCode.js';
+import type HTTPStatusCode from '../output/HTTPStatusCode.js';
 import type Reference from './Reference.js';
 import type Response from './Response.js';
 

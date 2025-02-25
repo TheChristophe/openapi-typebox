@@ -1,16 +1,17 @@
+import { JSONSchema7 } from 'json-schema';
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import configuration from './configuration.js';
+import configuration from '../shared/configuration.js';
+import generateSchemas from '../shared/generateSchemas.js';
+import NotImplementedError from '../shared/NotImplementedError.js';
+import sanitizeBulk from '../shared/sanitizeBulk.js';
+import template from '../shared/templater.js';
+import writeSourceFile from '../shared/writeSourceFile.js';
 import operationToFunction, { FunctionMetadata } from './functionGeneration/index.js';
 import generateResponses from './generateResponses.js';
-import generateSchemas from './generateSchemas.js';
-import NotImplementedError from './NotImplementedError.js';
 import type OpenApiSpec from './openapi/index.js';
 import { OpenApiMethods } from './openapi/PathItem.js';
-import sanitizeBulk from './sanitizeBulk.js';
-import template from './templater.js';
-import writeSourceFile from './writeSourceFile.js';
 
 const processPaths = (
   paths: Required<OpenApiSpec>['paths'],
@@ -20,11 +21,18 @@ const processPaths = (
   fs.mkdirSync(path.join(outDir, 'functions'), { recursive: true });
   const files: string[] = [];
 
-  const sharedFiles = ['clientConfig.ts', 'ApiError.ts', 'apiFunction.ts', 'request.ts'];
+  const sharedFiles = [
+    './output/ApiError.ts',
+    './output/apiFunction.ts',
+    './output/clientConfig.ts',
+    './output/HTTPStatusCode.ts',
+    './output/request.ts',
+  ];
   for (const file of sharedFiles) {
     writeSourceFile(
-      `${outDir}/${file}`,
-      fs.readFileSync(new URL(import.meta.resolve(`./clientLib/${file}`)), 'utf-8'),
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      `${outDir}/${file.split('/').pop()!}`,
+      fs.readFileSync(new URL(import.meta.resolve(file)), 'utf-8'),
     );
     files.push(`${outDir}/${file}`);
   }
@@ -200,7 +208,7 @@ const generatePackage = (version: string, outDir: string) => {
   );
 };
 
-const openapiToApiClient = async (specPath: string, outDir: string) => {
+const openapiToClient = async (specPath: string, outDir: string) => {
   // TODO: validation
   let spec: OpenApiSpec;
   if (['.yml', '.yaml'].some((e) => specPath.endsWith(e))) {
@@ -221,7 +229,20 @@ const openapiToApiClient = async (specPath: string, outDir: string) => {
   const files = [];
 
   if (spec.components?.schemas != null) {
-    files.push(...generateSchemas(spec.components.schemas, outPath));
+    console.log('Mkdir', path.join(outDir, 'models'));
+    const modelDir = path.join(outDir, 'models');
+    fs.mkdirSync(modelDir, { recursive: true });
+    files.push(
+      ...generateSchemas(
+        Object.entries(spec.components.schemas).map(([key, schema]) => ({
+          name: key,
+          schema: schema as JSONSchema7,
+          ref: `#/components/schemas/${key}`,
+        })),
+        modelDir,
+        outDir,
+      ),
+    );
   }
   if (spec.components?.responses != null) {
     files.push(...generateResponses(spec.components.responses, outPath));
@@ -240,4 +261,4 @@ const openapiToApiClient = async (specPath: string, outDir: string) => {
   await sanitizeBulk(outPath, files);
 };
 
-export default openapiToApiClient;
+export default openapiToClient;

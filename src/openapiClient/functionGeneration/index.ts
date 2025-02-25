@@ -1,14 +1,14 @@
+import writeSourceFile from '../../shared/writeSourceFile.js';
 import type Operation from '../openapi/Operation.js';
 import type Parameter from '../openapi/Parameter.js';
 import type Reference from '../openapi/Reference.js';
 import type RequestBody from '../openapi/RequestBody.js';
-import writeSourceFile from '../writeSourceFile.js';
 
-import { deduplicate } from '../deduplicate.js';
-import GenerationError from '../GenerationError.js';
-import typeboxImportStatements from '../modelGeneration/typeboxImportStatements.js';
-import { sanitizeVariableName, uppercaseFirst } from '../sanitization.js';
-import template from '../templater.js';
+import { deduplicate } from '../../shared/deduplicate.js';
+import GenerationError from '../../shared/GenerationError.js';
+import typeboxImportStatements from '../../shared/modelGeneration/typeboxImportStatements.js';
+import { sanitizeVariableName, uppercaseFirst } from '../../shared/sanitization.js';
+import template from '../../shared/templater.js';
 import buildParameterTypes from './buildParameterTypes.js';
 import buildResponseReturn from './buildResponseReturn.js';
 import buildResponseTypes, { ResponseTypes } from './buildResponseTypes.js';

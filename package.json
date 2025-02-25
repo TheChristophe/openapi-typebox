@@ -1,7 +1,7 @@
 {
   "name": "@thechristophe/openapi-typebox",
   "version": "0.0.4",
-  "bin": "src/cli.js",
+  "bin": "src/openapiClient/cli.js",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/thechristophe/openapi-typebox.git"
@@ -14,14 +14,14 @@
   "homepage": "https://github.com/thechristophe/openapi-typebox#readme",
   "scripts": {
     "build": "tsc --project tsconfig.build.json && pnpm copy-files",
-    "copy-files": "copyfiles -f src/clientLib/* ./dist/clientLib/",
+    "copy-files": "copyfiles -f src/shared/output/* ./dist/shared/output/ && copyfiles -f src/openapiClient/output/* ./dist/openapiClient/output/",
     "clean": "rimraf dist/",
     "prepublishOnly": "pnpm clean && pnpm build",
     "lint": "eslint src",
     "lint:export": "eslint --output-file eslint_report.json --format json src",
     "lint:formatting": "prettier --check .",
     "type-check": "tsc --noEmit",
-    "cli": "node ./dist/cli.js"
+    "cli": "node ./dist/openapiClient/cli.js"
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.4.1",

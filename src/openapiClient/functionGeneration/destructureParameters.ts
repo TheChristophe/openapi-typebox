@@ -1,7 +1,7 @@
+import { needsSanitization, sanitizeVariableName } from '../../shared/sanitization.js';
+import template from '../../shared/templater.js';
 import type Parameter from '../openapi/Parameter.js';
 import type RequestBody from '../openapi/RequestBody.js';
-import { needsSanitization, sanitizeVariableName } from '../sanitization.js';
-import template from '../templater.js';
 
 const destructureParameters = (parameters: Parameter[], requestBody?: RequestBody) => {
   if (parameters.length === 0 && requestBody == null) {

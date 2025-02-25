@@ -1,17 +1,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import appContext from './appContext.js';
+import context from '../shared/context.js';
+import template from '../shared/templater.js';
+import writeSourceFile from '../shared/writeSourceFile.js';
 import { buildResponseType } from './functionGeneration/buildResponseTypes.js';
 import refUnsupported from './functionGeneration/helpers/refUnsupported.js';
 import type OpenApiSpec from './openapi/index.js';
-import template from './templater.js';
-import writeSourceFile from './writeSourceFile.js';
 
 const generateResponseIndex = (outDir: string) => {
   writeSourceFile(
     `${outDir}/responses/index.ts`,
     template.lines(
-      ...Object.entries(appContext.responses.index)
+      ...Object.entries(context.responses.index)
         .sort(([key1], [key2]) => (key1 < key2 ? -1 : key1 > key2 ? 1 : 0))
         .map(([, response]) => response.import),
     ),
@@ -38,7 +38,7 @@ const generateResponses = (
     if (r) {
       const destFile = `${outDir}/responses/${name}.ts`;
       writeSourceFile(`${outDir}/responses/${name}.ts`, template.lines(r?.imports, r.code));
-      appContext.responses.add(`#/components/responses/${name}`, {
+      context.responses.add(`#/components/responses/${name}`, {
         typeName: r.typeName,
         sourceFile: destFile,
         import: `import { type ${r.typeName} } from '../responses/${name}.js';`,

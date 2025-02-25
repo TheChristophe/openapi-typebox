@@ -1,10 +1,10 @@
 import { JSONSchema7Definition } from 'json-schema';
-import { deduplicate } from '../deduplicate.js';
-import schemaToModel from '../modelGeneration/index.js';
+import { deduplicate } from '../../shared/deduplicate.js';
+import schemaToModel from '../../shared/modelGeneration/index.js';
+import template from '../../shared/templater.js';
+import writeSourceFile from '../../shared/writeSourceFile.js';
 import type Parameter from '../openapi/Parameter.js';
 import type RequestBody from '../openapi/RequestBody.js';
-import template from '../templater.js';
-import writeSourceFile from '../writeSourceFile.js';
 
 const parameterSchema = (parameter: Parameter): [string, JSONSchema7Definition] => {
   const schema = parameter.schema ?? {

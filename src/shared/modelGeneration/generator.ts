@@ -4,11 +4,11 @@ import {
   JSONSchema7Type,
   type JSONSchema7TypeName,
 } from 'json-schema';
-import appContext from '../appContext.js';
 import configuration from '../configuration.js';
+import context from '../context.js';
 import GenerationError from '../GenerationError.js';
 import template from '../templater.js';
-import CodeEmitter, { filterExtraOptions, Options } from './CodeEmitter.js';
+import CodeEmitter, { filterExtraOptions, Options } from './emitting/CodeEmitter.js';
 import { CodegenSlice, joinSubSlices } from './joinSlices.js';
 import MissingReferenceError from './MissingReferenceError.js';
 import {
@@ -37,7 +37,7 @@ import {
 
 const generator = (emitter: CodeEmitter) => {
   const resolveObjectReference = (schema: RefSchema): CodegenSlice => {
-    const entry = appContext.schemas.lookup(schema['$ref']);
+    const entry = context.schemas.lookup(schema['$ref']);
 
     if (entry == null) {
       throw new MissingReferenceError(schema['$ref']);

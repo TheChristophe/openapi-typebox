@@ -1,6 +1,6 @@
-import appContext from '../appContext.js';
+import context from '../../shared/context.js';
+import template from '../../shared/templater.js';
 import type Responses from '../openapi/Responses.js';
-import template from '../templater.js';
 import { ResponseTypes } from './buildResponseTypes.js';
 
 const buildResponseReturn = (
@@ -29,7 +29,7 @@ const buildResponseReturn = (
     }
     let resolvedResponse;
     if ('$ref' in response) {
-      const resolved = appContext.responses.lookup(response.$ref);
+      const resolved = context.responses.lookup(response.$ref);
       if (resolved === undefined) {
         throw new Error(`Could not resolve response reference ${response.$ref}`);
       }

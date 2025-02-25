@@ -1,5 +1,5 @@
 import { type JSONSchema7 } from 'json-schema';
-import { CodegenSlice } from './joinSlices.js';
+import { CodegenSlice } from '../joinSlices.js';
 
 const typeFields = [
   'title',

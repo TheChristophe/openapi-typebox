@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 import meow from 'meow';
-import configuration from './configuration.js';
-import openapiToApiClient from './main.js';
+import configuration from '../shared/configuration.js';
+import openapiToClient from './openapiToClient.js';
 
 const cli = meow(
   `
   Usage
-    $ openapi-box <input>
+    $ openapi-box <json or yaml file>
 
   Options
     --output, -o Output folder, default to "./client"
@@ -81,4 +81,4 @@ if (cli.flags.package) {
   };
 }
 
-await openapiToApiClient(cli.input[0], cli.flags.output);
+await openapiToClient(cli.input[0], cli.flags.output);
