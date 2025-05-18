@@ -38,9 +38,9 @@ const valueToEnumEntry = (value: JSONSchema7Type) => {
   } else if (typeof value === 'boolean') {
     return value ? 'True: true,' : 'False: false,';
   } else if (typeof value === 'number') {
-    return `${sanitizeVariableName(uppercaseFirst(camelize(`Num${value.toString()}`)))}: ${value.toString()},`;
+    return `'${sanitizeVariableName(uppercaseFirst(camelize(`Num${value.toString()}`)))}': ${value.toString()},`;
   } else if (typeof value === 'string') {
-    return `${sanitizeVariableName(uppercaseFirst(camelize(value.toString())))}: '${value}',`;
+    return `'${sanitizeVariableName(uppercaseFirst(camelize(value.toString())))}': '${value}',`;
   } else if (typeof value === 'object') {
     throw new Error('Objects and arrays not supported yet for enums');
   }
