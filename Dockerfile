@@ -20,6 +20,7 @@ FROM base AS prod
 RUN apk add --no-cache bash
 COPY --from=prod-deps /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist
+COPY --from=build /app/package.json /app/package.json
 COPY ["/entrypoint.sh", "./"]
 
 RUN chmod +x /app/entrypoint.sh

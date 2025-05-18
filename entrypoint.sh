@@ -17,4 +17,4 @@ mkdir -p -m 777 "${OUT_DIR}"
 if [[ ! -d "./client" ]]; then
     ln -s "${OUT_DIR}" "./client"
 fi
-node dist/cli.js -o "./client" "$@"
+npm run cli -- -o "./client" "$@"
