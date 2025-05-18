@@ -1,6 +1,6 @@
 {
   "name": "@thechristophe/openapi-typebox",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "bin": "src/openapiClient/cli.js",
   "repository": {
     "type": "git",
