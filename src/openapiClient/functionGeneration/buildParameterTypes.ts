@@ -3,10 +3,10 @@ import { deduplicate } from '../../shared/deduplicate.js';
 import schemaToModel from '../../shared/modelGeneration/index.js';
 import template from '../../shared/templater.js';
 import writeSourceFile from '../../shared/writeSourceFile.js';
-import type Parameter from '../openapi/Parameter.js';
+import Parameter from '../openapi/Parameter.js';
 import type RequestBody from '../openapi/RequestBody.js';
 
-const parameterSchema = (parameter: Parameter): [string, JSONSchema7Definition] => {
+const makeParameterSchema = (parameter: Parameter): [string, JSONSchema7Definition] => {
   const schema = parameter.schema ?? {
     type: 'object',
   };
@@ -28,94 +28,121 @@ const parameterSchema = (parameter: Parameter): [string, JSONSchema7Definition] 
   return [parameter.name, schema];
 };
 
+const MimeTypes = {
+  Json: 'application/json',
+  Query: 'application/x-www-form-urlencoded',
+  FormData: 'multipart/form-data',
+  Binary: 'application/octet-stream',
+};
+const getMimeType = (requestBody?: RequestBody): string | null => {
+  // no body
+  if (requestBody === undefined || requestBody.content === undefined) {
+    return null;
+  }
+
+  for (const mime of Object.values(MimeTypes)) {
+    if (requestBody.content[mime] !== undefined) {
+      return mime;
+    }
+  }
+
+  const fallbackMime = Object.keys(requestBody.content)[0];
+  console.warn('Unknown request body mime-type', fallbackMime);
+  return fallbackMime;
+};
+
+const buildBodyType = (
+  typeName: string,
+  contentType: string,
+  requestBody?: RequestBody,
+): { typeName: string; code?: string } | null => {
+  if (requestBody == null) {
+    return null;
+  }
+
+  if (
+    contentType === MimeTypes.Json ||
+    contentType === MimeTypes.Query ||
+    contentType === MimeTypes.FormData
+  ) {
+    const schemaModel = schemaToModel(
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      requestBody.content[contentType]!.schema!,
+      `${typeName}Body`,
+    );
+    if (schemaModel.type === 'source') {
+      return {
+        typeName: schemaModel.typeName,
+        code: template.lines(...deduplicate(schemaModel.imports), '', schemaModel.code),
+      };
+    }
+    return {
+      typeName: schemaModel.typeName,
+      code: template.lines(schemaModel.typeImport, schemaModel.validatorImport),
+    };
+  } else if (contentType === MimeTypes.Binary) {
+    return { typeName: 'Blob' };
+  }
+
+  return { typeName: 'unknown' };
+};
+
+const buildParameterType = (
+  typeName: string,
+  parameters: Parameter[],
+): { typeName: string; code?: string } | null => {
+  if (parameters.length === 0) {
+    return null;
+  }
+
+  const schemaModel = schemaToModel(
+    {
+      type: 'object',
+      properties: Object.fromEntries(parameters.map(makeParameterSchema)),
+      required: parameters.filter((p) => p.required).map((p) => p.name),
+    },
+    `${typeName}Params`,
+  );
+
+  if (schemaModel.type === 'source') {
+    return {
+      typeName: schemaModel.typeName,
+      code: template.lines(...deduplicate(schemaModel.imports), '', schemaModel.code),
+    };
+  }
+
+  return {
+    typeName: schemaModel.typeName,
+    code: template.lines(schemaModel.typeImport, schemaModel.validatorImport),
+  };
+};
+
 const buildParameterTypes = (
   outFile: string,
   typeName: string,
   parameters: Parameter[] = [],
   requestBody?: RequestBody,
 ) => {
-  let contentType: string | null;
-  // no body
-  if (requestBody === undefined || requestBody.content === undefined) {
-    contentType = null;
-  }
-  // json
-  else if (requestBody?.content['application/json'] !== undefined) {
-    contentType = 'application/json';
-  }
-  // url encoded
-  else if (requestBody?.content['application/x-www-form-urlencoded'] !== undefined) {
-    contentType = 'application/x-www-form-urlencoded';
-  }
-  // form data
-  else if (requestBody?.content['multipart/form-data'] !== undefined) {
-    contentType = 'multipart/form-data';
-  }
-  // binary
-  else if (requestBody?.content['application/octet-stream'] !== undefined) {
-    contentType = 'application/octet-stream';
-  }
-  // unknown
-  else {
-    contentType = Object.keys(requestBody.content)[0];
-    console.warn('Unknown request body mime-type', contentType);
-  }
-  const lines = [];
+  const contentType: string | null = getMimeType(requestBody);
+  const lines: string[] = [];
 
-  let bodyT = null;
-  if (requestBody) {
-    if (
-      contentType === 'application/json' ||
-      contentType === 'application/x-www-form-urlencoded' ||
-      contentType === 'multipart/form-data'
-    ) {
-      const schemaModel = schemaToModel(
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        requestBody.content[contentType]!.schema!,
-        `${typeName}Body`,
-      );
-      if (schemaModel.type === 'source') {
-        lines.push(...deduplicate(schemaModel.imports), '', schemaModel.code);
-        bodyT = schemaModel.typeName;
-      } else {
-        lines.push(schemaModel.typeImport);
-        lines.push(schemaModel.validatorImport);
-        bodyT = schemaModel.typeName;
-      }
-    } else if (contentType === 'application/octet-stream') {
-      bodyT = 'Blob';
-    } else {
-      bodyT = 'unknown';
-    }
+  const bodyType = contentType ? buildBodyType(typeName, contentType, requestBody) : null;
+  if (bodyType?.code != null) {
+    lines.push(bodyType.code);
   }
 
-  let paramsT = null;
-  if (parameters.length > 0) {
-    const schemaModel = schemaToModel(
-      {
-        type: 'object',
-        properties: Object.fromEntries(parameters.map(parameterSchema)),
-        required: parameters.filter((p) => p.required).map((p) => p.name),
-      },
-      `${typeName}Params`,
-    );
-    if (schemaModel.type === 'source') {
-      lines.push(...deduplicate(schemaModel.imports), '', schemaModel.code);
-      paramsT = schemaModel.typeName;
-    } else {
-      lines.push(schemaModel.typeImport);
-      lines.push(schemaModel.validatorImport);
-      paramsT = schemaModel.typeName;
-    }
+  const parameterType = buildParameterType(typeName, parameters);
+  if (parameterType?.code != null) {
+    lines.push(parameterType.code);
   }
 
-  if (bodyT !== null || paramsT !== null) {
+  if (bodyType !== null || parameterType !== null) {
     lines.push(
       template.lines(
         `type ${typeName} = {`,
-        bodyT !== null && `  body: ${bodyT};`,
-        paramsT !== null &&
-          `  params${parameters.length > 0 && parameters.some((p) => p.required) ? '' : '?'}: ${paramsT},`,
+        bodyType !== null && `  body: ${bodyType.typeName};`,
+        parameterType !== null &&
+          `  params${parameters.length > 0 && parameters.some((p) => p.required) ? '' : '?'}: ${parameterType.typeName},`,
         '};',
       ),
     );

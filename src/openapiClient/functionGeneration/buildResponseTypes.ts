@@ -5,9 +5,8 @@ import schemaToModel from '../../shared/modelGeneration/index.js';
 import typeboxImportStatements from '../../shared/modelGeneration/typeboxImportStatements.js';
 import template from '../../shared/templater.js';
 import writeSourceFile from '../../shared/writeSourceFile.js';
-import type Response from '../openapi/Response.js';
+import Response from '../openapi/Response.js';
 import type Responses from '../openapi/Responses.js';
-import { SUCCESS_CODES } from '../output/HTTPStatusCode.js';
 
 export const buildResponseType = (name: string, response: Response) => {
   if (!response.content) {
@@ -46,18 +45,16 @@ export const buildResponseType = (name: string, response: Response) => {
 
 export type ResponseTypes = { responseCode: string; typename?: string; imports?: string }[];
 
-const buildResponseTypes = (
-  outFile: string,
-  responseTypeName: string,
+const buildResponses = (
   responses: Responses,
-  parametersT: { typename: string; imports: string } | null,
-): { types: ResponseTypes } => {
-  const lines: string[] = [];
-  const imports: string[] = ["import { type RequestMeta } from '../request.js';"];
-  if (parametersT !== null) {
-    imports.push(parametersT.imports);
-  }
+): {
+  types: ResponseTypes;
+  code: string[];
+  imports: string[];
+} => {
   const types: ResponseTypes = [];
+  const code: string[] = [];
+  const imports: string[] = [];
 
   for (const [statusCode, response] of Object.entries(responses)) {
     if ('$ref' in response) {
@@ -73,7 +70,7 @@ const buildResponseTypes = (
         types.push({ responseCode: statusCode });
       } else {
         if (r.code != null) {
-          lines.push(r.code);
+          code.push(r.code);
           types.push({ responseCode: statusCode, typename: r.typeName });
         } else {
           types.push({
@@ -88,9 +85,26 @@ const buildResponseTypes = (
       }
     }
   }
+  return { types, code, imports };
+};
 
-  if (parametersT) {
-    lines.push(`type Request = RequestMeta & { parameters: ${parametersT.typename} };`);
+const buildResponseTypes = (
+  outFile: string,
+  responseTypeName: string,
+  responsesRaw: Responses,
+  parameterType: { typename: string; imports: string } | null,
+): { types: ResponseTypes } => {
+  const lines: string[] = [];
+  const imports: string[] = ["import { type RequestMeta } from '../request.js';"];
+  if (parameterType !== null) {
+    imports.push(parameterType.imports);
+  }
+  const responses = buildResponses(responsesRaw);
+  lines.push(...responses.code);
+  imports.push(...responses.imports);
+
+  if (parameterType) {
+    lines.push(`type Request = RequestMeta & { parameters: ${parameterType.typename} };`);
   } else {
     lines.push('type Request = RequestMeta;');
   }
@@ -99,33 +113,18 @@ const buildResponseTypes = (
 
   lines.push(
     template.lines(
-      types
-        .filter(({ responseCode }) => (SUCCESS_CODES as number[]).includes(+responseCode))
-        .map(({ responseCode, typename }) =>
-          template.concat(
-            '| {',
-            ' response: Response;',
-            ' request: Request;',
-            ` status: ${responseCode};`,
-            typename && ` data: ${typename};`,
-            ' }',
-          ),
+      responses.types.map(({ responseCode, typename }) =>
+        template.concat(
+          '| {',
+          ' response: Response;',
+          ' request: Request;',
+          // "default" is a special openapi case that is not a number
+          ` status: ${responseCode === 'default' ? "'default'" : responseCode};`,
+          typename && ` data: ${typename};`,
+          ' }',
         ),
-      types
-        .filter(({ responseCode }) => !(SUCCESS_CODES as number[]).includes(+responseCode))
-        .map(({ responseCode, typename }) =>
-          template.concat(
-            '| {',
-            ' response: Response;',
-            ' request: Request;',
-            // "default" is a special openapi case that is not a number
-            ` status: ${responseCode === 'default' ? "'default'" : responseCode};`,
-            typename && ` data: ${typename};`,
-            ' }',
-          ),
-        ),
-      ' | { response: Response; request: Request; status: -1; }',
-      ';',
+      ),
+      ' | { response: Response; request: Request; status: -1; };',
       '',
       `export default ${responseTypeName};`,
     ),
@@ -136,7 +135,7 @@ const buildResponseTypes = (
     template.lines(...deduplicate([typeboxImportStatements, ...imports]), '', ...lines),
   );
 
-  return { types };
+  return { types: responses.types };
 };
 
 export default buildResponseTypes;
