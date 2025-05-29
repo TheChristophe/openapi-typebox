@@ -1,6 +1,7 @@
 export type CodegenSlice = {
   code: string;
   imports?: string[];
+  importOnly?: boolean;
 };
 
 export const joinImports = (output: CodegenSlice[]): string[] =>

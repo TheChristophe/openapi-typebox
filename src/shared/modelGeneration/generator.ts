@@ -288,7 +288,22 @@ const generator = (emitter: CodeEmitter) => {
     return parseUnknown();
   };
 
-  return generate;
+  const topLevelGenerate = (schema: JSONSchema7Definition): CodegenSlice => {
+    if (typeof schema === 'boolean') {
+      return { code: JSON.stringify(schema) };
+    }
+
+    if (isRef(schema)) {
+      return {
+        ...resolveObjectReference(schema),
+        importOnly: true,
+      };
+    }
+    return generate(schema);
+  };
+
+  return topLevelGenerate;
+  //return generate;
 };
 
 export default generator;

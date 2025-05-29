@@ -53,13 +53,30 @@ export const generateEnum = (name: string, schema: EnumSchema) =>
 const generateValidator = generator(new TypeboxEmitter());
 const generateType = generator(new TypescriptEmitter());
 
+type ModelCodeReference = {
+  typeName: string;
+  validatorName: string;
+} & (
+  | {
+      type: 'source';
+      hasEnum: boolean;
+      imports: string[];
+      code: string;
+    }
+  | {
+      type: 'import';
+      typeImport: string;
+      validatorImport: string;
+    }
+);
+
 /**
  * Generates TypeBox code from a given JSON schema
  */
 const schemaToModel = (
   jsonSchema: JSONSchema7Definition,
   name: string = generateTypeName(jsonSchema),
-) => {
+): ModelCodeReference => {
   const typeName = sanitizeModelName(name);
   if (typeName.length === 0) {
     throw new GenerationError('Tried generating a model with empty name (no title)');
@@ -72,8 +89,18 @@ const schemaToModel = (
   const validator = generateValidator(jsonSchema);
   const type = generateType(jsonSchema);
 
+  if (validator.importOnly && type.importOnly && type.imports && validator.imports) {
+    return {
+      typeName: type.code,
+      validatorName: validator.code,
+      type: 'import',
+      typeImport: type.imports[0],
+      validatorImport: validator.imports[0],
+    };
+  }
+
   return {
-    typeName,
+    typeName: typeName,
     validatorName: `${typeName}Schema`,
     hasEnum: typeof jsonSchema !== 'boolean' && isEnumSchema(jsonSchema),
     imports: deduplicate([
@@ -83,9 +110,9 @@ const schemaToModel = (
       ...(type.imports ?? []),
       "import OneOf from '../_oneOf.js';",
     ]),
+    type: 'source',
     code: template.lines(
       `export const ${typeName}Schema = ${validator.code};`,
-      //`type ${typeName} = Static<typeof ${typeName}Schema>;`,
       `export type ${typeName} = ${type.code};`,
 
       // boolean is weird

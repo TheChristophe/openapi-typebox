@@ -69,10 +69,19 @@ const buildParameterTypes = (
       contentType === 'application/x-www-form-urlencoded' ||
       contentType === 'multipart/form-data'
     ) {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const schema = schemaToModel(requestBody.content[contentType]!.schema!, `${typeName}Body`);
-      lines.push(...deduplicate(schema.imports), '', schema.code);
-      bodyT = schema.typeName;
+      const schemaModel = schemaToModel(
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        requestBody.content[contentType]!.schema!,
+        `${typeName}Body`,
+      );
+      if (schemaModel.type === 'source') {
+        lines.push(...deduplicate(schemaModel.imports), '', schemaModel.code);
+        bodyT = schemaModel.typeName;
+      } else {
+        lines.push(schemaModel.typeImport);
+        lines.push(schemaModel.validatorImport);
+        bodyT = schemaModel.typeName;
+      }
     } else if (contentType === 'application/octet-stream') {
       bodyT = 'Blob';
     } else {
@@ -82,7 +91,7 @@ const buildParameterTypes = (
 
   let paramsT = null;
   if (parameters.length > 0) {
-    const schema = schemaToModel(
+    const schemaModel = schemaToModel(
       {
         type: 'object',
         properties: Object.fromEntries(parameters.map(parameterSchema)),
@@ -90,8 +99,14 @@ const buildParameterTypes = (
       },
       `${typeName}Params`,
     );
-    lines.push(...deduplicate(schema.imports), '', schema.code);
-    paramsT = schema.typeName;
+    if (schemaModel.type === 'source') {
+      lines.push(...deduplicate(schemaModel.imports), '', schemaModel.code);
+      paramsT = schemaModel.typeName;
+    } else {
+      lines.push(schemaModel.typeImport);
+      lines.push(schemaModel.validatorImport);
+      paramsT = schemaModel.typeName;
+    }
   }
 
   if (bodyT !== null || paramsT !== null) {

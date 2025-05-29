@@ -130,9 +130,9 @@ const operationToFunction = (
     bodyContentType = contentType;
     parameterTypeImport = {
       typename: parameterTypeName,
-      import: `import type ${parameterTypeName} from './${operationName}.parameters.js';`,
+      imports: `import type ${parameterTypeName} from './${operationName}.parameters.js';`,
     };
-    lines.push(parameterTypeImport.import, '');
+    lines.push(parameterTypeImport.imports, '');
   }
 
   const responseTypeName = `${uppercaseFirst(operationName)}Response`;
@@ -145,11 +145,24 @@ const operationToFunction = (
       parameterTypeImport,
     );
     responseTypes = types;
+    const typeImports = types
+      .flatMap(({ imports: import_, typename }) =>
+        typename && import_ === undefined ? `type ${typename}` : [],
+      )
+      .join(', ');
+    const otherImports = types
+      // eslint-disable-next-line @typescript-eslint/no-shadow
+      .filter(({ imports }) => imports != null)
+      // eslint-disable-next-line @typescript-eslint/no-shadow
+      .flatMap(({ imports }) => imports);
     lines.push(
-      `import type ${responseTypeName} from './${operationName}.responses.js';`,
-      `import { ${types.flatMap(({ import: import_, typename }) => (typename && import_ === undefined ? `type ${typename}` : [])).join(', ')} } from './${operationName}.responses.js';`,
-      ...types.flatMap(({ import: import_ }) => import_ ?? []),
-      '',
+      template.lines(
+        `import type ${responseTypeName} from './${operationName}.responses.js';`,
+        typeImports.length > 0 &&
+          `import { ${typeImports} } from './${operationName}.responses.js';`,
+        otherImports,
+        '',
+      ),
     );
   }
 

@@ -10,53 +10,52 @@ import type Responses from '../openapi/Responses.js';
 import { SUCCESS_CODES } from '../output/HTTPStatusCode.js';
 
 export const buildResponseType = (name: string, response: Response) => {
-  const lines = [];
-  const imports = [];
-  let typeName = null;
-
-  const responseName = `Response${name}`;
   if (!response.content) {
     return null;
   }
 
-  const responseSchema = response.content['application/json'];
-  if (responseSchema === undefined) {
-    // TODO: different types
-    lines.push(`type ${responseName} = unknown;`);
-    typeName = responseName;
-  } else {
-    const schema =
-      responseSchema.schema != null
-        ? schemaToModel(responseSchema.schema, responseName)
-        : undefined;
+  const responseName = `Response${name}`;
 
-    if (schema?.code !== undefined) {
-      lines.push(schema.code, '');
-      typeName = schema.typeName;
-    } else {
-      lines.push(`export type ${responseName} = unknown;`, '');
-      typeName = responseName;
-    }
-    if (schema) {
-      imports.push(...schema.imports);
-    }
+  const responseSchema = response.content['application/json'];
+  if (responseSchema === undefined || responseSchema.schema == null) {
+    return {
+      typeName: responseName,
+      code: `type ${responseName} = unknown;`,
+    };
   }
 
-  return { typeName, code: lines.join('\n'), imports };
+  const schema = schemaToModel(responseSchema.schema, responseName);
+
+  if (schema.type === 'import') {
+    return {
+      typeName: schema.typeName,
+      imports: template.lines(schema.typeImport, schema.validatorImport),
+    };
+  }
+
+  return {
+    typeName: schema.typeName,
+    code: template.lines(
+      schema.code,
+      '',
+      `export const ${schema.typeName} = ${schema.validatorName};`,
+    ),
+    imports: template.lines(schema.imports),
+  };
 };
 
-export type ResponseTypes = { responseCode: string; typename?: string; import?: string }[];
+export type ResponseTypes = { responseCode: string; typename?: string; imports?: string }[];
 
 const buildResponseTypes = (
   outFile: string,
   responseTypeName: string,
   responses: Responses,
-  parametersT: { typename: string; import: string } | null,
+  parametersT: { typename: string; imports: string } | null,
 ): { types: ResponseTypes } => {
   const lines: string[] = [];
   const imports: string[] = ["import { type RequestMeta } from '../request.js';"];
   if (parametersT !== null) {
-    imports.push(parametersT.import);
+    imports.push(parametersT.imports);
   }
   const types: ResponseTypes = [];
 
@@ -66,17 +65,25 @@ const buildResponseTypes = (
       if (r === undefined) {
         throw new GenerationError(`Unresolved response reference ${response.$ref}`);
       }
-      types.push({ responseCode: statusCode, typename: r.typeName, import: r.import });
+      types.push({ responseCode: statusCode, typename: r.typeName, imports: r.import });
       imports.push(r.import);
     } else {
       const r = buildResponseType(statusCode === 'default' ? 'Default' : statusCode, response);
       if (r == null) {
         types.push({ responseCode: statusCode });
       } else {
-        lines.push(r.code);
-        types.push({ responseCode: statusCode, typename: r.typeName });
+        if (r.code != null) {
+          lines.push(r.code);
+          types.push({ responseCode: statusCode, typename: r.typeName });
+        } else {
+          types.push({
+            responseCode: statusCode,
+            typename: r.typeName,
+            imports: r.imports,
+          });
+        }
         if (r.imports) {
-          imports.push(...r.imports);
+          imports.push(r.imports);
         }
       }
     }

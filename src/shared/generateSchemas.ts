@@ -44,23 +44,33 @@ const generateSchemas = (schemas: Schema[], outDir: string, rootDir = outDir) =>
     for (let i = openSet.length - 1; i >= 0; i--) {
       const { name, ref, schema } = openSet[i];
       try {
-        const { typeName, validatorName, imports, code, hasEnum } = schemaToModel(schema, name);
-        const destFile = `${outDir}/${typeName}.ts`;
+        const schemaModel = schemaToModel(schema, name);
+        if (schemaModel.type === 'import') {
+          context.schemas.add(ref, {
+            typeName: schemaModel.typeName,
+            validatorName: schemaModel.validatorName,
+            sourceFile: '',
+            import: template.lines(schemaModel.typeImport, schemaModel.validatorImport),
+            raw: schema,
+          });
+        } else {
+          const destFile = `${outDir}/${schemaModel.typeName}.ts`;
 
-        writeSourceFile(destFile, template.lines(...imports, '', code));
-        files.push(destFile);
+          writeSourceFile(destFile, template.lines(...schemaModel.imports, '', schemaModel.code));
+          files.push(destFile);
 
-        context.schemas.add(ref, {
-          typeName,
-          validatorName,
-          sourceFile: destFile,
-          import: `import { ${!hasEnum ? 'type' : ''} ${typeName}, ${validatorName} } from './${typeName}.js';`,
-          raw: schema,
-        });
-        progressed = true;
+          context.schemas.add(ref, {
+            typeName: schemaModel.typeName,
+            validatorName: schemaModel.validatorName,
+            sourceFile: destFile,
+            import: `import { ${!schemaModel.hasEnum ? 'type' : ''} ${schemaModel.typeName}, ${schemaModel.validatorName} } from './${schemaModel.typeName}.js';`,
+            raw: schema,
+          });
+          progressed = true;
 
-        // remove processed item
-        openSet.splice(i, 1);
+          // remove processed item
+          openSet.splice(i, 1);
+        }
       } catch (e) {
         if (e instanceof MissingReferenceError) {
           errors.push(e);
