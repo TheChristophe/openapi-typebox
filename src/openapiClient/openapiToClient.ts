@@ -22,7 +22,6 @@ const processPaths = (
   const files: string[] = [];
 
   const sharedFiles = [
-    './output/ApiError.ts',
     './output/apiFunction.ts',
     './output/clientConfig.ts',
     './output/HTTPStatusCode.ts',
