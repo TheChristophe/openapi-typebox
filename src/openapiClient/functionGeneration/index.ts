@@ -145,11 +145,12 @@ const operationToFunction = (
       parameterTypeImport,
     );
     responseTypes = types;
-    const typeImports = types
-      .flatMap(({ imports: import_, typename }) =>
-        typename && import_ === undefined ? `type ${typename}` : [],
-      )
-      .join(', ');
+    const typeImports = types.flatMap(({ imports, typeName }) =>
+      typeName && imports === undefined ? `type ${typeName}` : [],
+    );
+    const validatorImports = types.flatMap(({ imports, validatorName }) =>
+      validatorName && imports === undefined ? validatorName : [],
+    );
     const otherImports = types
       // eslint-disable-next-line @typescript-eslint/no-shadow
       .filter(({ imports }) => imports != null)
@@ -159,7 +160,7 @@ const operationToFunction = (
       template.lines(
         `import type ${responseTypeName} from './${operationName}.responses.js';`,
         typeImports.length > 0 &&
-          `import { ${typeImports} } from './${operationName}.responses.js';`,
+          `import { ${[...typeImports, validatorImports].join(', ')} } from './${operationName}.responses.js';`,
         otherImports,
         '',
       ),

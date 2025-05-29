@@ -28,12 +28,14 @@ export const buildResponseType = (name: string, response: Response) => {
   if (schema.type === 'import') {
     return {
       typeName: schema.typeName,
+      validatorName: schema.validatorName,
       imports: template.lines(schema.typeImport, schema.validatorImport),
     };
   }
 
   return {
     typeName: schema.typeName,
+    validatorName: schema.validatorName,
     code: template.lines(
       schema.code,
       '',
@@ -43,7 +45,14 @@ export const buildResponseType = (name: string, response: Response) => {
   };
 };
 
-export type ResponseTypes = { responseCode: string; typename?: string; imports?: string }[];
+export type ResponseType = {
+  responseCode: string;
+  typeName?: string;
+  validatorName?: string;
+  schema?: string;
+  imports?: string;
+};
+export type ResponseTypes = Array<ResponseType>;
 
 const buildResponses = (
   responses: Responses,
@@ -62,27 +71,39 @@ const buildResponses = (
       if (r === undefined) {
         throw new GenerationError(`Unresolved response reference ${response.$ref}`);
       }
-      types.push({ responseCode: statusCode, typename: r.typeName, imports: r.import });
+      types.push({
+        responseCode: statusCode,
+        typeName: r.typeName,
+        validatorName: r.validatorName,
+        imports: r.import,
+      });
       imports.push(r.import);
+      continue;
+    }
+
+    const r = buildResponseType(statusCode === 'default' ? 'Default' : statusCode, response);
+    if (r == null) {
+      types.push({ responseCode: statusCode });
+      continue;
+    }
+
+    if (r.code != null) {
+      code.push(r.code);
+      types.push({
+        responseCode: statusCode,
+        typeName: r.typeName,
+        validatorName: r.validatorName,
+      });
     } else {
-      const r = buildResponseType(statusCode === 'default' ? 'Default' : statusCode, response);
-      if (r == null) {
-        types.push({ responseCode: statusCode });
-      } else {
-        if (r.code != null) {
-          code.push(r.code);
-          types.push({ responseCode: statusCode, typename: r.typeName });
-        } else {
-          types.push({
-            responseCode: statusCode,
-            typename: r.typeName,
-            imports: r.imports,
-          });
-        }
-        if (r.imports) {
-          imports.push(r.imports);
-        }
-      }
+      types.push({
+        responseCode: statusCode,
+        typeName: r.typeName,
+        validatorName: r.validatorName,
+        imports: r.imports,
+      });
+    }
+    if (r.imports) {
+      imports.push(r.imports);
     }
   }
   return { types, code, imports };
@@ -113,14 +134,15 @@ const buildResponseTypes = (
 
   lines.push(
     template.lines(
-      responses.types.map(({ responseCode, typename }) =>
+      responses.types.map(({ responseCode, typeName, validatorName }) =>
         template.concat(
           '| {',
           ' response: Response;',
           ' request: Request;',
           // "default" is a special openapi case that is not a number
           ` status: ${responseCode === 'default' ? "'default'" : responseCode};`,
-          typename && ` data: ${typename};`,
+          typeName && ` data: ${typeName};`,
+          validatorName && `validator: typeof ${validatorName};`,
           ' }',
         ),
       ),

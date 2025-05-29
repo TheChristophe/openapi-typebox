@@ -40,6 +40,7 @@ const generateResponses = (
       writeSourceFile(`${outDir}/responses/${name}.ts`, template.lines(r?.imports, r.code));
       context.responses.add(`#/components/responses/${name}`, {
         typeName: r.typeName,
+        validatorName: r.validatorName,
         sourceFile: destFile,
         import: `import { type ${r.typeName} } from '../responses/${name}.js';`,
         raw: response,

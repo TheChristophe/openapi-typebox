@@ -1,7 +1,7 @@
 import context from '../../shared/context.js';
 import template from '../../shared/templater.js';
 import type Responses from '../openapi/Responses.js';
-import { ResponseTypes } from './buildResponseTypes.js';
+import { ResponseType, ResponseTypes } from './buildResponseTypes.js';
 
 const buildResponseReturn = (
   operationName: string,
@@ -13,14 +13,9 @@ const buildResponseReturn = (
   lines.push('switch (response.status) {');
   let defaultResponse = null;
 
-  const responseTypeNames: Record<string, string | undefined> =
-    responseTypes?.reduce(
-      (acc, next) => {
-        acc[next.responseCode] = next.typename;
-        return acc;
-      },
-      {} as Record<string, string | undefined>,
-    ) ?? {};
+  const responseTypeNames: Record<string, ResponseType | undefined> = responseTypes
+    ? Object.fromEntries(responseTypes.map((response) => [response.responseCode, response]))
+    : {};
 
   for (const [statusCode, response] of Object.entries(responses)) {
     // TODO: type system quirk?
@@ -45,9 +40,9 @@ const buildResponseReturn = (
       lines.push(template.lines(`case ${statusCode}:`));
     }
 
-    const responseTypename = responseTypeNames[statusCode];
+    const responseType = responseTypeNames[statusCode];
     // TODO: how do make responseTypename or content check unnecessary
-    if (resolvedResponse.content === undefined || !responseTypename) {
+    if (resolvedResponse.content === undefined || !responseType) {
       lines.push(
         template.lines(
           'return {',
@@ -67,7 +62,9 @@ const buildResponseReturn = (
         template.lines(
           'return {',
           `  status: ${statusCode},`,
-          `  data: await response.blob() as ${responseTypename},`,
+          responseType.typeName && `    data: await response.blob() as ${responseType.typeName},`,
+          responseType.validatorName && `    validator: ${responseType.validatorName},`,
+          '  validator: ',
           '  response,',
           '  request: requestMeta,',
           '};',
@@ -78,7 +75,8 @@ const buildResponseReturn = (
         template.lines(
           'return {',
           `  status: ${statusCode},`,
-          `  data: await response.json() as ${responseTypename},`,
+          responseType.typeName && `    data: await response.json() as ${responseType.typeName},`,
+          responseType.validatorName && `    validator: ${responseType.validatorName},`,
           '  response,',
           '  request: requestMeta,',
           '};',
@@ -96,7 +94,10 @@ const buildResponseReturn = (
         'if (response.status !== 0) {',
         '  return {',
         "    status: 'default',",
-        `    data: await response.json() as ${defaultResponseTypename},`,
+        defaultResponseTypename.typeName &&
+          `    data: await response.json() as ${defaultResponseTypename.typeName},`,
+        defaultResponseTypename.validatorName &&
+          `    validator: ${defaultResponseTypename.validatorName},`,
         '    response,',
         '    request: requestMeta,',
         '  };',

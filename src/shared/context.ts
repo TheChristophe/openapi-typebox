@@ -35,6 +35,10 @@ type ResponseEntry = {
    */
   typeName: string;
   /**
+   * Name of typebox validator / schema
+   */
+  validatorName?: string;
+  /**
    * Source file path
    */
   sourceFile: string;
