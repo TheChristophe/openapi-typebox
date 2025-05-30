@@ -54,6 +54,7 @@ const buildJsDoc = (operation: Operation) =>
 
 export type FunctionMetadata = {
   operationName: string;
+  takesParameters: boolean;
   requiresParameters: boolean;
   importPath: string;
   systemPath: string;
@@ -282,6 +283,7 @@ const operationToFunction = (
   return {
     operationName,
     requiresParameters: requiredParameters,
+    takesParameters: takesParameters,
     importPath: `./functions/${operationName}.js`,
     systemPath: `${outDir}/functions/${operationName}.ts`,
   };

@@ -92,9 +92,9 @@ const buildClient = (
     '  }',
 
     '  return ({',
-    functions.map(({ operationName, requiresParameters }) =>
-      requiresParameters
-        ? `${operationName}: ((args: Parameters<typeof ${operationName}>[0]) => ${operationName}({ ...args, config: mergeConfigs(baseConfig, args.config) })) as typeof ${operationName},`
+    functions.map(({ operationName, takesParameters, requiresParameters }) =>
+      takesParameters
+        ? `${operationName}: ((args: Parameters<typeof ${operationName}>[0]${!requiresParameters ? '= {}' : ''}) => ${operationName}({ ...args, config: mergeConfigs(baseConfig, args.config) })) as typeof ${operationName},`
         : `${operationName}: ((args: Parameters<typeof ${operationName}>[0] = {}) => ${operationName}({ config: mergeConfigs(baseConfig, args?.config) })) as typeof ${operationName},`,
     ),
     '  });',
