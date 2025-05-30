@@ -29,7 +29,7 @@ export const buildResponseType = (name: string, response: Response) => {
     return {
       typeName: schema.typeName,
       validatorName: schema.validatorName,
-      imports: template.lines(schema.typeImport, schema.validatorImport),
+      imports: [schema.typeImport, schema.validatorImport],
     };
   }
 
@@ -41,7 +41,7 @@ export const buildResponseType = (name: string, response: Response) => {
       '',
       `export const ${schema.typeName} = ${schema.validatorName};`,
     ),
-    imports: template.lines(schema.imports),
+    imports: schema.imports,
   };
 };
 
@@ -50,7 +50,7 @@ export type ResponseType = {
   typeName?: string;
   validatorName?: string;
   schema?: string;
-  imports?: string;
+  imports?: string[];
 };
 export type ResponseTypes = Array<ResponseType>;
 
@@ -75,7 +75,7 @@ const buildResponses = (
         responseCode: statusCode,
         typeName: r.typeName,
         validatorName: r.validatorName,
-        imports: r.import,
+        imports: [r.import],
       });
       imports.push(r.import);
       continue;
@@ -103,7 +103,7 @@ const buildResponses = (
       });
     }
     if (r.imports) {
-      imports.push(r.imports);
+      imports.push(...r.imports);
     }
   }
   return { types, code, imports };
