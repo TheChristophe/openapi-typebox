@@ -4,6 +4,7 @@ import path from 'node:path';
 import YAML from 'yaml';
 import configuration from '../shared/configuration.js';
 import generateSchemas from '../shared/generateSchemas.js';
+import { default as rootLogger } from '../shared/logger.js';
 import NotImplementedError from '../shared/NotImplementedError.js';
 import sanitizeBulk from '../shared/sanitizeBulk.js';
 import template from '../shared/templater.js';
@@ -13,11 +14,13 @@ import generateResponses from './generateResponses.js';
 import type OpenApiSpec from './openapi/index.js';
 import { OpenApiMethods } from './openapi/PathItem.js';
 
+const logger = rootLogger.child({ context: 'client' });
+
 const processPaths = (
   paths: Required<OpenApiSpec>['paths'],
   outDir: string,
 ): FunctionMetadata[] => {
-  console.log('Mkdir', path.join(outDir, 'functions'));
+  logger.info('Mkdir', path.join(outDir, 'functions'));
   fs.mkdirSync(path.join(outDir, 'functions'), { recursive: true });
   const files: string[] = [];
 
@@ -221,14 +224,14 @@ const openapiToClient = async (specPath: string, outDir: string) => {
   }
 
   const outPath = path.resolve(outDir);
-  console.log('Mkdir', outPath);
+  logger.info('Mkdir', outPath);
   //fs.rmSync(outPath, { recursive: true, force: true });
   fs.mkdirSync(outPath, { recursive: true });
 
   const files = [];
 
   if (spec.components?.schemas != null) {
-    console.log('Mkdir', path.join(outDir, 'models'));
+    logger.info('Mkdir', path.join(outDir, 'models'));
     const modelDir = path.join(outDir, 'models');
     fs.mkdirSync(modelDir, { recursive: true });
     files.push(

@@ -4,8 +4,13 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import configuration from '../shared/configuration.js';
 import generateSchemas from '../shared/generateSchemas.js';
+import { default as rootLogger } from '../shared/logger.js';
 import sanitizeBulk from '../shared/sanitizeBulk.js';
 import walk from '../shared/walk.js';
+
+const logger = rootLogger.child({
+  context: 'jsonSchema',
+});
 
 const write = promisify(fs.writeFile);
 const read = promisify(fs.readFile);
@@ -117,7 +122,7 @@ const readFile = async (file: string) => {
 
 const jsonschemaToModel = async (specFolder: string, outDir: string) => {
   const outPath = path.resolve(outDir);
-  console.log('Mkdir', outPath);
+  logger.info(`Creating ${outPath}`);
   //fs.rmSync(outPath, { recursive: true, force: true });
   fs.mkdirSync(outPath, { recursive: true });
 

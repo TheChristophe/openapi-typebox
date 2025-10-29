@@ -1,10 +1,13 @@
 import { JSONSchema7 } from 'json-schema';
 import fs from 'node:fs';
 import context from './context.js';
+import { default as rootLogger } from './logger.js';
 import schemaToModel from './modelGeneration/index.js';
 import MissingReferenceError from './modelGeneration/MissingReferenceError.js';
 import template from './templater.js';
 import writeSourceFile from './writeSourceFile.js';
+
+const logger = rootLogger.child({ context: 'schema' });
 
 const generateComponentIndex = (outDir: string) => {
   writeSourceFile(
@@ -77,18 +80,22 @@ const generateSchemas = (schemas: Schema[], outDir: string, rootDir = outDir) =>
           // hope reference will resolve in a later iteration
           continue;
         }
-        console.error('Unknown error', e);
+        logger.error('Unknown error', e);
         process.exit(1);
       }
     }
 
     if (!progressed) {
-      console.error(
-        'Failed to resolve all references for',
+      logger.error(
+        'Not all references could be resolved',
         openSet.map(({ ref }) => ref),
       );
+      logger.warn(
+        'Available schemas',
+        Array.from(Object.keys(context.schemas.index)).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
+      );
       for (const e of errors) {
-        console.error(e.message);
+        logger.error(e.message);
       }
       process.exit(1);
     }

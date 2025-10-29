@@ -7,6 +7,7 @@ import {
 import configuration from '../configuration.js';
 import context from '../context.js';
 import GenerationError from '../GenerationError.js';
+import { default as rootLogger } from '../logger.js';
 import template from '../templater.js';
 import CodeEmitter, { filterExtraOptions, Options } from './emitting/CodeEmitter.js';
 import { CodegenSlice, joinSubSlices } from './joinSlices.js';
@@ -34,6 +35,18 @@ import {
   type OneOfSchema,
   RefSchema,
 } from './schema-matchers.js';
+
+const logger = rootLogger.child({ context: 'generator' });
+
+let nullableWarningSent = false;
+const nullableWarning = () => {
+  if (!nullableWarningSent) {
+    logger.warn(
+      "Warning: 'nullable: true' is invalid in OpenAPI 3.1.0 and is only supported for compatibility reasons.\nPlease migrate to using 'type: [<type>, \"null\"]' instead.\nThis warning will only be sent once.",
+    );
+    nullableWarningSent = true;
+  }
+};
 
 const generator = (emitter: CodeEmitter) => {
   const resolveObjectReference = (schema: RefSchema): CodegenSlice => {
@@ -244,9 +257,7 @@ const generator = (emitter: CodeEmitter) => {
       if (configuration.strict) {
         throw new GenerationError("'nullable: true' is invalid in OpenAPI 3.1.0.");
       }
-      console.warn(
-        "Warning: 'nullable: true' is invalid in OpenAPI 3.1.0 and is only supported for compatibility reasons.",
-      );
+      nullableWarning();
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { nullable, ...rest } = schema;
       const { code, imports } = generate(rest);
@@ -284,7 +295,7 @@ const generator = (emitter: CodeEmitter) => {
     if (configuration.strict) {
       throw new GenerationError(`Unsupported schema: ${JSON.stringify(schema)}`);
     }
-    console.warn(`Unsupported schema: ${JSON.stringify(schema)}, defaulting to unknown`);
+    logger.warn('Unsupported schema, defaulting to unknown', { schema });
     return parseUnknown();
   };
 

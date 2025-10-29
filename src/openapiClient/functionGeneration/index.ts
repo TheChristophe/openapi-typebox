@@ -6,6 +6,7 @@ import type RequestBody from '../openapi/RequestBody.js';
 
 import { deduplicate } from '../../shared/deduplicate.js';
 import GenerationError from '../../shared/GenerationError.js';
+import { default as rootLogger } from '../../shared/logger.js';
 import typeboxImportStatements from '../../shared/modelGeneration/typeboxImportStatements.js';
 import { sanitizeVariableName, uppercaseFirst } from '../../shared/sanitization.js';
 import template from '../../shared/templater.js';
@@ -17,6 +18,8 @@ import destructureParameters from './destructureParameters.js';
 import commentSanitize from './helpers/commentSanitize.js';
 import refUnsupported from './helpers/refUnsupported.js';
 import routeToOperationName from './helpers/routeToOperationName.js';
+
+const logger = rootLogger.child({ context: 'function' });
 
 export class InvalidParamError extends Error {}
 
@@ -89,7 +92,7 @@ const operationToFunction = (
     for (const param of parameters) {
       refUnsupported(param);
       if (!['path', 'query'].includes(param.in)) {
-        console.error(`Unsupported parameter location ${param.in}`);
+        logger.error(`Unsupported parameter location ${param.in}`);
         //throw new NotImplementedError(`Unsupported parameter location ${param.in}`);
       }
     }

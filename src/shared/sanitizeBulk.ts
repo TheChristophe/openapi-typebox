@@ -3,7 +3,12 @@ import { promisify } from 'node:util';
 import * as prettier from 'prettier';
 import * as ts from 'typescript';
 import configuration from './configuration.js';
+import { default as rootLogger } from './logger.js';
 import walk from './walk.js';
+
+const logger = rootLogger.child({
+  context: 'sanitize',
+});
 
 const prettierConfigPath = await prettier.resolveConfigFile();
 const prettierConfig = (prettierConfigPath &&
@@ -18,7 +23,7 @@ const read = promisify(fs.readFile);
 
 const sanitizeBulk = async (outDir: string, files: string[]) => {
   if (configuration.compile) {
-    console.log('Compiling...');
+    logger.info('Compiling...');
     const program = ts.createProgram(files, {
       declaration: true,
       target: ts.ScriptTarget.ES2020,
@@ -42,21 +47,21 @@ const sanitizeBulk = async (outDir: string, files: string[]) => {
           diagnostic.start ?? 0,
         );
         const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
-        console.log(
+        logger.error(
           `${diagnostic.file.fileName} (${(line + 1).toString()},${(character + 1).toString()}): ${message}`,
         );
       } else {
-        console.log(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
+        logger.error(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
       }
     }
 
     if (emitResult.emitSkipped) {
-      console.error('Failed to compile some files');
+      logger.error('Failed to compile some files');
       process.exit(1);
     }
   }
 
-  console.log('Formatting...');
+  logger.info('Formatting...');
   const promises: Promise<unknown>[] = [];
   for await (const file of walk(outDir)) {
     if (!file.endsWith('.ts')) {

@@ -1,4 +1,7 @@
 import fs from 'node:fs';
+import { default as rootLogger } from './logger.js';
+
+const logger = rootLogger.child({ context: 'write' });
 
 /**
  * @returns The generated code as string
@@ -8,7 +11,7 @@ import fs from 'node:fs';
 const writeSourceFile = (filename: string, input: string) => {
   fs.writeFileSync(filename, input);
 
-  console.log('Generated', filename);
+  logger.info('Generated', filename);
 };
 
 export default writeSourceFile;

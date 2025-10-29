@@ -1,11 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import context from '../shared/context.js';
+import { default as rootLogger } from '../shared/logger.js';
 import template from '../shared/templater.js';
 import writeSourceFile from '../shared/writeSourceFile.js';
 import { buildResponseType } from './functionGeneration/buildResponseTypes.js';
 import refUnsupported from './functionGeneration/helpers/refUnsupported.js';
 import type OpenApiSpec from './openapi/index.js';
+
+const logger = rootLogger.child({ context: 'response' });
 
 const generateResponseIndex = (outDir: string) => {
   writeSourceFile(
@@ -24,7 +27,7 @@ const generateResponses = (
   responses: Required<Required<OpenApiSpec>['components']>['responses'],
   outDir: string,
 ) => {
-  console.log('Mkdir', path.join(outDir, 'responses'));
+  logger.info('Mkdir', path.join(outDir, 'responses'));
   fs.mkdirSync(path.join(outDir, 'responses'), { recursive: true });
   const files = [];
 

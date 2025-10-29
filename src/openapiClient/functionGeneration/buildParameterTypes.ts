@@ -1,10 +1,13 @@
 import { JSONSchema7Definition } from 'json-schema';
 import { deduplicate } from '../../shared/deduplicate.js';
+import { default as rootLogger } from '../../shared/logger.js';
 import schemaToModel from '../../shared/modelGeneration/index.js';
 import template from '../../shared/templater.js';
 import writeSourceFile from '../../shared/writeSourceFile.js';
 import Parameter from '../openapi/Parameter.js';
 import type RequestBody from '../openapi/RequestBody.js';
+
+const logger = rootLogger.child({ context: 'parameter' });
 
 const makeParameterSchema = (parameter: Parameter): [string, JSONSchema7Definition] => {
   const schema = parameter.schema ?? {
@@ -47,7 +50,7 @@ const getMimeType = (requestBody?: RequestBody): string | null => {
   }
 
   const fallbackMime = Object.keys(requestBody.content)[0];
-  console.warn('Unknown request body mime-type', fallbackMime);
+  logger.warn('Unknown request body mime-type', fallbackMime);
   return fallbackMime;
 };
 
