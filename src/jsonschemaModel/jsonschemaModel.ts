@@ -133,7 +133,8 @@ const jsonschemaToModel = async (specFolder: string, outDir: string) => {
     const ref = path.relative(specFolder, file);
     return {
       name: path.basename(file, '.schema.json'),
-      ref: ref.startsWith('.') ? ref.slice(2) : ref,
+      // TODO: more 'correct' windows path substitution
+      ref: (ref.startsWith('.') ? ref.slice(2) : ref).replaceAll('\\', '/'),
       schema: JSON.parse(content) as JSONSchema7,
     };
   });
