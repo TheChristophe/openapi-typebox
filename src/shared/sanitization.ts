@@ -27,6 +27,10 @@ export const needsSanitization = (varName: string) => {
     return true;
   }
 
+  if (varName.includes('-')) {
+    return true;
+  }
+
   // no reserved keywords
   switch (varName) {
     // TODO: put the js keywords here
