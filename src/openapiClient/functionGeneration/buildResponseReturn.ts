@@ -18,10 +18,6 @@ const buildResponseReturn = (
     : {};
 
   for (const [statusCode, response] of Object.entries(responses)) {
-    // TODO: type system quirk?
-    if (response === undefined) {
-      continue;
-    }
     let resolvedResponse;
     if ('$ref' in response) {
       const resolved = context.responses.lookup(response.$ref);
