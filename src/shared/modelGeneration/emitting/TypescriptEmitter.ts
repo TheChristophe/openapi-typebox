@@ -1,5 +1,7 @@
+import { SchemaEntry } from '../../context.js';
 import { needsSanitization } from '../../sanitization.js';
 import template from '../../templater.js';
+import { ImportSlice } from '../joinSlices.js';
 import CodeEmitter, { Options } from './CodeEmitter.js';
 
 class TypescriptEmitter implements CodeEmitter {
@@ -95,11 +97,11 @@ class TypescriptEmitter implements CodeEmitter {
     return 'never';
   }
 
-  import(name: string) {
+  import(metadata: SchemaEntry): ImportSlice {
     return {
-      code: name,
-      // TODO: resolve imports better than just using root-relative imports
-      imports: [`import { type ${name} } from "../models/${name}.js";`],
+      code: metadata.typeName,
+      imports: metadata.importMeta.type,
+      importOnly: true,
     };
   }
 }

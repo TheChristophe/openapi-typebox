@@ -1,6 +1,6 @@
 import { type JSONSchema7Definition, JSONSchema7Type } from 'json-schema';
 import GenerationError from '../GenerationError.js';
-import { deduplicate } from '../deduplicate.js';
+import { ImportCollection, ImportSource } from '../importSource.js';
 import { camelize, sanitizeVariableName, uppercaseFirst } from '../sanitization.js';
 import template from '../templater.js';
 import TypeboxEmitter from './emitting/TypeboxEmitter.js';
@@ -8,15 +8,6 @@ import TypescriptEmitter from './emitting/TypescriptEmitter.js';
 import generator from './generator.js';
 import { EnumSchema, isEnumSchema } from './schema-matchers.js';
 import typeboxImportStatements from './typeboxImportStatements.js';
-
-const generateTypeName = (schema: JSONSchema7Definition) => {
-  if (typeof schema === 'boolean') {
-    return 'Model';
-  }
-
-  // TODO: title which may have spaces, handle how?
-  return schema['title'] ?? 'Model';
-};
 
 const sanitizeModelName = (name: string) => {
   switch (name) {
@@ -60,23 +51,20 @@ type ModelCodeReference = {
   | {
       type: 'source';
       hasEnum: boolean;
-      imports: string[];
+      imports: ImportCollection;
       code: string;
     }
   | {
       type: 'import';
-      typeImport: string;
-      validatorImport: string;
+      typeImport: ImportSource;
+      validatorImport: ImportSource;
     }
 );
 
 /**
  * Generates TypeBox code from a given JSON schema
  */
-const schemaToModel = (
-  jsonSchema: JSONSchema7Definition,
-  name: string = generateTypeName(jsonSchema),
-): ModelCodeReference => {
+const schemaToModel = (jsonSchema: JSONSchema7Definition, name: string): ModelCodeReference => {
   const typeName = sanitizeModelName(name);
   if (typeName.length === 0) {
     throw new GenerationError('Tried generating a model with empty name (no title)');
@@ -90,12 +78,19 @@ const schemaToModel = (
   const type = generateType(jsonSchema);
 
   if (validator.importOnly && type.importOnly && type.imports && validator.imports) {
+    // there is only ever 1 type or validator, so there should only be one entry
+    if (type.imports instanceof ImportCollection) {
+      throw new GenerationError(`Type for ${name} has multiple imports`);
+    }
+    if (validator.imports instanceof ImportCollection) {
+      throw new GenerationError(`Validator for ${name} has multiple imports`);
+    }
     return {
       typeName: type.code,
       validatorName: validator.code,
       type: 'import',
-      typeImport: type.imports[0],
-      validatorImport: validator.imports[0],
+      typeImport: type.imports,
+      validatorImport: validator.imports,
     };
   }
 
@@ -103,13 +98,18 @@ const schemaToModel = (
     typeName: typeName,
     validatorName: `${typeName}Schema`,
     hasEnum: typeof jsonSchema !== 'boolean' && isEnumSchema(jsonSchema),
-    imports: deduplicate([
-      typeboxImportStatements,
-
-      ...(validator.imports ?? []),
-      ...(type.imports ?? []),
-      "import OneOf from '../_oneOf.js';",
-    ]),
+    imports: new ImportCollection(typeboxImportStatements, type.imports, validator.imports, {
+      file: {
+        internal: true,
+        path: '_oneOf.js',
+      },
+      entries: [
+        {
+          item: 'OneOf',
+          default: true,
+        },
+      ],
+    }),
     type: 'source',
     code: template.lines(
       `export const ${typeName}Schema = ${validator.code};`,

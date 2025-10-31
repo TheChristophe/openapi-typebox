@@ -1,11 +1,13 @@
 import { type JSONSchema7 } from 'json-schema';
 import type Response from '../openapiClient/openapi/Response.js';
+import PathInfo from './PathInfo.js';
+import { ImportMetadata, ImportSource } from './importSource.js';
 
 /**
  * Singleton
  * TODO: refactor
  */
-type SchemaEntry = {
+export type SchemaEntry = {
   /**
    * Name of typescript type
    */
@@ -17,11 +19,9 @@ type SchemaEntry = {
   /**
    * Source file path
    */
-  sourceFile: string;
-  /**
-   * Pre-made import code
-   */
-  import: string;
+  sourceFile?: PathInfo;
+
+  importMeta: ImportMetadata;
   /**
    * Raw OpenAPI schema object
    *
@@ -41,11 +41,11 @@ type ResponseEntry = {
   /**
    * Source file path
    */
-  sourceFile: string;
+  sourceFile: PathInfo;
   /**
    * Pre-made import code
    */
-  import: string;
+  import: ImportSource;
   /**
    * Raw OpenAPI response object
    *
@@ -64,6 +64,7 @@ const referenceIndex = <ReferenceT>() => {
 };
 
 export const context = {
+  expectedSchemas: new Map<string, SchemaEntry>(),
   schemas: referenceIndex<SchemaEntry>(),
   responses: referenceIndex<ResponseEntry>(),
 };

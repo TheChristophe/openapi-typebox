@@ -4,6 +4,7 @@ import * as prettier from 'prettier';
 import * as ts from 'typescript';
 import configuration from './configuration.js';
 import { default as rootLogger } from './logger.js';
+import PathInfo, { resolveAbsolutePath } from './PathInfo.js';
 import walk from './walk.js';
 
 const logger = rootLogger.child({
@@ -21,10 +22,10 @@ const prettierConfig = (prettierConfigPath &&
 const write = promisify(fs.writeFile);
 const read = promisify(fs.readFile);
 
-const sanitizeBulk = async (outDir: string, files: string[]) => {
+const sanitizeBulk = async (outDir: string, files: PathInfo[]) => {
   if (configuration.compile) {
     logger.info('Compiling...');
-    const program = ts.createProgram(files, {
+    const program = ts.createProgram(files.map(resolveAbsolutePath), {
       declaration: true,
       target: ts.ScriptTarget.ES2020,
       module: ts.ModuleKind.NodeNext,

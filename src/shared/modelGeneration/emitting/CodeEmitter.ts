@@ -1,5 +1,6 @@
 import { type JSONSchema7 } from 'json-schema';
-import { CodegenSlice } from '../joinSlices.js';
+import { SchemaEntry } from '../../context.js';
+import { ImportSlice } from '../joinSlices.js';
 
 const typeFields = [
   'title',
@@ -47,7 +48,7 @@ type CodeEmitter = {
   null: (options?: Options) => string;
   never: (options?: Options) => string;
 
-  import: (name: string) => CodegenSlice;
+  import: (name: SchemaEntry) => ImportSlice;
 };
 
 export default CodeEmitter;

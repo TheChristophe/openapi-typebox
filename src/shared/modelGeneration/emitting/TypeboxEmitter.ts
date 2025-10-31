@@ -1,3 +1,5 @@
+import { SchemaEntry } from '../../context.js';
+import { ImportSlice } from '../joinSlices.js';
 import CodeEmitter, { Options } from './CodeEmitter.js';
 
 class TypeboxEmitter implements CodeEmitter {
@@ -75,11 +77,11 @@ class TypeboxEmitter implements CodeEmitter {
     return `Type.Never(${this.#formatExtraOptions(options, false)})`;
   }
 
-  import(name: string) {
+  import(metadata: SchemaEntry): ImportSlice {
     return {
-      code: `${name}Schema`,
-      // TODO: resolve imports better than just using root-relative imports
-      imports: [`import { ${name}Schema } from "../models/${name}.js";`],
+      code: metadata.validatorName,
+      imports: metadata.importMeta.validator,
+      importOnly: true,
     };
   }
 }

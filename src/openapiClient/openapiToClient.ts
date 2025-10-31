@@ -1,11 +1,11 @@
 import { JSONSchema7 } from 'json-schema';
 import fs from 'node:fs';
-import path from 'node:path';
 import YAML from 'yaml';
 import configuration from '../shared/configuration.js';
 import generateSchemas from '../shared/generateSchemas.js';
 import { default as rootLogger } from '../shared/logger.js';
 import NotImplementedError from '../shared/NotImplementedError.js';
+import PathInfo, { resolveAbsolutePath } from '../shared/PathInfo.js';
 import sanitizeBulk from '../shared/sanitizeBulk.js';
 import template from '../shared/templater.js';
 import writeSourceFile from '../shared/writeSourceFile.js';
@@ -18,25 +18,22 @@ const logger = rootLogger.child({ context: 'client' });
 
 const processPaths = (
   paths: Required<OpenApiSpec>['paths'],
-  outDir: string,
+  outDir: PathInfo,
 ): FunctionMetadata[] => {
-  logger.info('Mkdir', path.join(outDir, 'functions'));
-  fs.mkdirSync(path.join(outDir, 'functions'), { recursive: true });
-  const files: string[] = [];
+  logger.info('Mkdir', resolveAbsolutePath(outDir));
+  fs.mkdirSync(resolveAbsolutePath(outDir), { recursive: true });
 
-  const sharedFiles = [
-    './output/apiFunction.ts',
-    './output/clientConfig.ts',
-    './output/HTTPStatusCode.ts',
-    './output/request.ts',
-  ];
+  const sharedFiles = ['apiFunction.ts', 'clientConfig.ts', 'HTTPStatusCode.ts', 'request.ts'];
   for (const file of sharedFiles) {
+    const filePath = {
+      basePath: outDir.basePath,
+      path: '.',
+      filename: file,
+    };
     writeSourceFile(
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      `${outDir}/${file.split('/').pop()!}`,
-      fs.readFileSync(new URL(import.meta.resolve(file)), 'utf-8'),
+      filePath,
+      fs.readFileSync(new URL(import.meta.resolve(`./output/${file}`)), 'utf-8'),
     );
-    files.push(`${outDir}/${file}`);
   }
 
   const functions: FunctionMetadata[] = [];
@@ -56,12 +53,13 @@ const processPaths = (
         operation.parameters = (operation.parameters ?? []).concat(pathItem['parameters']);
       }
 
-      functions.push(operationToFunction(route, method, operation, outDir));
+      functions.push(
+        operationToFunction(route, method, operation, {
+          ...outDir,
+          path: 'functions',
+        }),
+      );
     }
-  }
-
-  for (const fn of functions) {
-    files.push(fn.systemPath);
   }
 
   return functions;
@@ -69,7 +67,7 @@ const processPaths = (
 
 const buildClient = (
   functions: Awaited<ReturnType<typeof operationToFunction>>[],
-  outDir: string,
+  outFile: PathInfo,
 ) => {
   functions.sort((a, b) => {
     if (a.operationName < b.operationName) {
@@ -106,11 +104,11 @@ const buildClient = (
     'export default buildClient;',
   );
 
-  writeSourceFile(`${outDir}/buildClient.ts`, source);
-  return `${outDir}/buildClient.ts`;
+  writeSourceFile(outFile, source);
+  return outFile;
 };
 
-const generatePackage = (version: string, outDir: string) => {
+const generatePackage = (version: string, outDir: PathInfo) => {
   if (!configuration.package) {
     return;
   }
@@ -128,8 +126,8 @@ const generatePackage = (version: string, outDir: string) => {
     }
   }
 
-  fs.writeFileSync(
-    `${outDir}/package.json`,
+  writeSourceFile(
+    { ...outDir, path: '.', filename: 'package.json' },
     JSON.stringify(
       {
         name: configuration.package.name,
@@ -187,8 +185,8 @@ const generatePackage = (version: string, outDir: string) => {
       2,
     ),
   );
-  fs.writeFileSync(
-    `${outDir}/tsconfig.json`,
+  writeSourceFile(
+    { ...outDir, path: '.', filename: 'tsconfig.json' },
     JSON.stringify(
       {
         compilerOptions: {
@@ -210,7 +208,7 @@ const generatePackage = (version: string, outDir: string) => {
   );
 };
 
-const openapiToClient = async (specPath: string, outDir: string) => {
+const openapiToClient = async (specPath: string, outPath: PathInfo) => {
   // TODO: validation
   let spec: OpenApiSpec;
   if (['.yml', '.yaml'].some((e) => specPath.endsWith(e))) {
@@ -223,17 +221,19 @@ const openapiToClient = async (specPath: string, outDir: string) => {
     spec = JSON.parse(fileContents);
   }
 
-  const outPath = path.resolve(outDir);
-  logger.info('Mkdir', outPath);
+  logger.info('Mkdir', resolveAbsolutePath(outPath));
   //fs.rmSync(outPath, { recursive: true, force: true });
-  fs.mkdirSync(outPath, { recursive: true });
+  fs.mkdirSync(resolveAbsolutePath(outPath), { recursive: true });
 
-  const files = [];
+  const files: PathInfo[] = [];
 
   if (spec.components?.schemas != null) {
-    logger.info('Mkdir', path.join(outDir, 'models'));
-    const modelDir = path.join(outDir, 'models');
-    fs.mkdirSync(modelDir, { recursive: true });
+    const modelsDir = {
+      ...outPath,
+      path: 'models',
+    };
+    logger.info('Mkdir', resolveAbsolutePath(modelsDir));
+    fs.mkdirSync(resolveAbsolutePath(modelsDir), { recursive: true });
     files.push(
       ...generateSchemas(
         Object.entries(spec.components.schemas).map(([key, schema]) => ({
@@ -241,26 +241,39 @@ const openapiToClient = async (specPath: string, outDir: string) => {
           schema: schema as JSONSchema7,
           ref: `#/components/schemas/${key}`,
         })),
-        modelDir,
-        outDir,
+        modelsDir,
       ),
     );
   }
   if (spec.components?.responses != null) {
-    files.push(...generateResponses(spec.components.responses, outPath));
+    files.push(
+      ...generateResponses(spec.components.responses, {
+        ...outPath,
+        path: 'responses',
+      }),
+    );
   }
 
   if (spec.paths != null) {
-    const functions = processPaths(spec.paths, outPath);
+    const functions = processPaths(spec.paths, {
+      ...outPath,
+      path: 'functions',
+    });
     files.push(...functions.map((fn) => fn.systemPath));
-    files.push(buildClient(functions, outDir));
+    files.push(
+      buildClient(functions, {
+        basePath: outPath.basePath,
+        path: '.',
+        filename: 'buildClient.ts',
+      }),
+    );
   }
 
   if (configuration.package) {
     generatePackage(spec.info.version, outPath);
   }
 
-  await sanitizeBulk(outPath, files);
+  await sanitizeBulk(outPath.basePath, files);
 };
 
 export default openapiToClient;

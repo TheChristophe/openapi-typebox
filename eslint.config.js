@@ -91,8 +91,8 @@ const config = tseslint.config(
       '@typescript-eslint/unbound-method': 'off', // conflicts with api clients
 
       'no-console': 'off',
-      '@typescript-eslint/no-unused-vars': 1,
-      'unused-imports/no-unused-imports': 2,
+      '@typescript-eslint/no-unused-vars': 'warn',
+      'unused-imports/no-unused-imports': 'error',
 
       // broken?
       '@typescript-eslint/consistent-type-imports': 'off',

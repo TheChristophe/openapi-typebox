@@ -81,4 +81,7 @@ if (cli.flags.package) {
   };
 }
 
-await openapiToClient(cli.input[0], cli.flags.output);
+await openapiToClient(cli.input[0], {
+  basePath: cli.flags.output,
+  path: '.',
+});

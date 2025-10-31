@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { default as rootLogger } from './logger.js';
+import PathInfo, { resolveAbsolutePath } from './PathInfo.js';
 
 const logger = rootLogger.child({ context: 'write' });
 
@@ -8,10 +9,11 @@ const logger = rootLogger.child({ context: 'write' });
  *
  * @throws Error
  **/
-const writeSourceFile = (filename: string, input: string) => {
-  fs.writeFileSync(filename, input);
+const writeSourceFile = (filename: PathInfo, input: string) => {
+  const path = resolveAbsolutePath(filename);
+  fs.writeFileSync(path, input);
 
-  logger.info('Generated', filename);
+  logger.info('Generated', path);
 };
 
 export default writeSourceFile;

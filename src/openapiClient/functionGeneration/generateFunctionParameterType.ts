@@ -1,7 +1,8 @@
 import { JSONSchema7Definition } from 'json-schema';
-import { deduplicate } from '../../shared/deduplicate.js';
+import { ImportCollection, ImportSource, resolveImports } from '../../shared/importSource.js';
 import { default as rootLogger } from '../../shared/logger.js';
 import schemaToModel from '../../shared/modelGeneration/index.js';
+import PathInfo from '../../shared/PathInfo.js';
 import template from '../../shared/templater.js';
 import writeSourceFile from '../../shared/writeSourceFile.js';
 import Parameter from '../openapi/Parameter.js';
@@ -36,7 +37,7 @@ const MimeTypes = {
   Query: 'application/x-www-form-urlencoded',
   FormData: 'multipart/form-data',
   Binary: 'application/octet-stream',
-};
+} as const;
 const getMimeType = (requestBody?: RequestBody): string | null => {
   // no body
   if (requestBody === undefined || requestBody.content === undefined) {
@@ -54,11 +55,13 @@ const getMimeType = (requestBody?: RequestBody): string | null => {
   return fallbackMime;
 };
 
+type TypeInfo = { typeName: string; code?: string; imports?: ImportCollection };
+
 const buildBodyType = (
   typeName: string,
   contentType: string,
   requestBody?: RequestBody,
-): { typeName: string; code?: string } | null => {
+): TypeInfo | null => {
   if (requestBody == null) {
     return null;
   }
@@ -76,12 +79,13 @@ const buildBodyType = (
     if (schemaModel.type === 'source') {
       return {
         typeName: schemaModel.typeName,
-        code: template.lines(...deduplicate(schemaModel.imports), '', schemaModel.code),
+        code: schemaModel.code,
+        imports: schemaModel.imports,
       };
     }
     return {
       typeName: schemaModel.typeName,
-      code: template.lines(schemaModel.typeImport, schemaModel.validatorImport),
+      imports: new ImportCollection(schemaModel.typeImport, schemaModel.validatorImport),
     };
   } else if (contentType === MimeTypes.Binary) {
     return { typeName: 'Blob' };
@@ -90,10 +94,7 @@ const buildBodyType = (
   return { typeName: 'unknown' };
 };
 
-const buildParameterType = (
-  typeName: string,
-  parameters: Parameter[],
-): { typeName: string; code?: string } | null => {
+const buildParameterType = (typeName: string, parameters: Parameter[]): TypeInfo | null => {
   if (parameters.length === 0) {
     return null;
   }
@@ -110,37 +111,48 @@ const buildParameterType = (
   if (schemaModel.type === 'source') {
     return {
       typeName: schemaModel.typeName,
-      code: template.lines(...deduplicate(schemaModel.imports), '', schemaModel.code),
+      imports: schemaModel.imports,
+      code: schemaModel.code,
     };
   }
 
   return {
     typeName: schemaModel.typeName,
-    code: template.lines(schemaModel.typeImport, schemaModel.validatorImport),
+    imports: new ImportCollection(schemaModel.typeImport, schemaModel.validatorImport),
   };
 };
 
-const buildParameterTypes = (
-  outFile: string,
+const generateFunctionParameterType = (
+  outFile: PathInfo,
   typeName: string,
   parameters: Parameter[] = [],
   requestBody?: RequestBody,
-) => {
+): {
+  contentType: string | null;
+  import: ImportSource;
+} => {
   const contentType: string | null = getMimeType(requestBody);
-  const lines: string[] = [];
+  const implementation: string[] = [];
+  const imports = new ImportCollection();
 
   const bodyType = contentType ? buildBodyType(typeName, contentType, requestBody) : null;
+  if (bodyType?.imports != null) {
+    imports.append(bodyType.imports);
+  }
   if (bodyType?.code != null) {
-    lines.push(bodyType.code);
+    implementation.push(bodyType.code);
   }
 
   const parameterType = buildParameterType(typeName, parameters);
+  if (parameterType?.imports != null) {
+    imports.append(parameterType.imports);
+  }
   if (parameterType?.code != null) {
-    lines.push(parameterType.code);
+    implementation.push(parameterType.code);
   }
 
   if (bodyType !== null || parameterType !== null) {
-    lines.push(
+    implementation.push(
       template.lines(
         `type ${typeName} = {`,
         bodyType !== null && `  body: ${bodyType.typeName};`,
@@ -150,17 +162,29 @@ const buildParameterTypes = (
       ),
     );
   } else {
-    lines.push(`type ${typeName} = unknown;`);
+    implementation.push(`type ${typeName} = unknown;`);
   }
 
-  writeSourceFile(
-    outFile,
-    template.lines(...deduplicate(lines), '', `export default ${typeName};`),
-  );
+  implementation.push(`export default ${typeName};`);
+
+  writeSourceFile(outFile, template.lines(resolveImports(outFile, imports), '', ...implementation));
 
   return {
     contentType,
+    import: {
+      file: {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        path: `${outFile.path}/${outFile.filename!.replace('.ts', '.js')}`,
+        internal: true,
+      },
+      entries: [
+        {
+          item: typeName,
+          default: true,
+        },
+      ],
+    },
   };
 };
 
-export default buildParameterTypes;
+export default generateFunctionParameterType;

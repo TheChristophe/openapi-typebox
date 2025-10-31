@@ -1,6 +1,7 @@
 import fs from 'node:fs';
-import path from 'node:path';
+import PathInfo, { resolveAbsolutePath } from '../shared/PathInfo.js';
 import context from '../shared/context.js';
+import { resolveImports } from '../shared/importSource.js';
 import { default as rootLogger } from '../shared/logger.js';
 import template from '../shared/templater.js';
 import writeSourceFile from '../shared/writeSourceFile.js';
@@ -10,9 +11,9 @@ import type OpenApiSpec from './openapi/index.js';
 
 const logger = rootLogger.child({ context: 'response' });
 
-const generateResponseIndex = (outDir: string) => {
+const generateResponseIndex = (outFile: PathInfo) => {
   writeSourceFile(
-    `${outDir}/responses/index.ts`,
+    outFile,
     template.lines(
       ...Object.entries(context.responses.index)
         .sort(([key1], [key2]) => (key1 < key2 ? -1 : key1 > key2 ? 1 : 0))
@@ -20,38 +21,57 @@ const generateResponseIndex = (outDir: string) => {
     ),
   );
 
-  return [`${outDir}/responses/index.ts`];
+  return [outFile];
 };
 
 const generateResponses = (
   responses: Required<Required<OpenApiSpec>['components']>['responses'],
-  outDir: string,
+  outDir: PathInfo,
 ) => {
-  logger.info('Mkdir', path.join(outDir, 'responses'));
-  fs.mkdirSync(path.join(outDir, 'responses'), { recursive: true });
+  logger.info('Mkdir', resolveAbsolutePath(outDir));
+  fs.mkdirSync(resolveAbsolutePath(outDir), { recursive: true });
   const files = [];
 
   for (const [name, response] of Object.entries(responses)) {
     refUnsupported(response);
-    // TODO: this probably wouldn't happen, type system quirk?
-    if (response === undefined) {
-      continue;
-    }
     const r = buildResponseType(name, response);
     if (r) {
-      const destFile = `${outDir}/responses/${name}.ts`;
-      writeSourceFile(`${outDir}/responses/${name}.ts`, template.lines(r?.imports, r.code));
+      const destFile = {
+        ...outDir,
+        filename: `${name}.ts`,
+      };
+      writeSourceFile(
+        destFile,
+        template.lines(r?.imports != null && resolveImports(outDir, r.imports), r.code),
+      );
       context.responses.add(`#/components/responses/${name}`, {
         typeName: r.typeName,
         validatorName: r.validatorName,
         sourceFile: destFile,
-        import: `import { type ${r.typeName} } from '../responses/${name}.js';`,
+        import: {
+          file: {
+            path: `responses/${name}.js`,
+            internal: true,
+          },
+          entries: [
+            {
+              item: r.typeName,
+              typeOnly: true,
+            },
+          ],
+        },
         raw: response,
       });
     }
   }
 
-  files.push(...generateResponseIndex(outDir));
+  files.push(
+    ...generateResponseIndex({
+      ...outDir,
+      path: 'responses',
+      filename: 'index.ts',
+    }),
+  );
   return files;
 };
 

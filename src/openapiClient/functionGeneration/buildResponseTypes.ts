@@ -1,8 +1,9 @@
 import context from '../../shared/context.js';
-import { deduplicate } from '../../shared/deduplicate.js';
 import GenerationError from '../../shared/GenerationError.js';
+import { ImportCollection, ImportSource, resolveImports } from '../../shared/importSource.js';
 import schemaToModel from '../../shared/modelGeneration/index.js';
 import typeboxImportStatements from '../../shared/modelGeneration/typeboxImportStatements.js';
+import PathInfo from '../../shared/PathInfo.js';
 import template from '../../shared/templater.js';
 import writeSourceFile from '../../shared/writeSourceFile.js';
 import Response from '../openapi/Response.js';
@@ -29,7 +30,7 @@ export const buildResponseType = (name: string, response: Response) => {
     return {
       typeName: schema.typeName,
       validatorName: schema.validatorName,
-      imports: [schema.typeImport, schema.validatorImport],
+      imports: new ImportCollection(schema.typeImport, schema.validatorImport),
     };
   }
 
@@ -50,7 +51,7 @@ export type ResponseType = {
   typeName?: string;
   validatorName?: string;
   schema?: string;
-  imports?: string[];
+  imports?: ImportCollection;
 };
 export type ResponseTypes = Array<ResponseType>;
 
@@ -59,11 +60,11 @@ const buildResponses = (
 ): {
   types: ResponseTypes;
   code: string[];
-  imports: string[];
+  imports: ImportCollection;
 } => {
   const types: ResponseTypes = [];
   const code: string[] = [];
-  const imports: string[] = [];
+  const imports = new ImportCollection();
 
   for (const [statusCode, response] of Object.entries(responses)) {
     if ('$ref' in response) {
@@ -75,9 +76,9 @@ const buildResponses = (
         responseCode: statusCode,
         typeName: r.typeName,
         validatorName: r.validatorName,
-        imports: [r.import],
+        imports: new ImportCollection(r.import),
       });
-      imports.push(r.import);
+      imports.append(r.import);
       continue;
     }
 
@@ -103,26 +104,29 @@ const buildResponses = (
       });
     }
     if (r.imports) {
-      imports.push(...r.imports);
+      imports.append(r.imports);
     }
   }
   return { types, code, imports };
 };
 
 const buildResponseTypes = (
-  outFile: string,
+  outFile: PathInfo,
   responseTypeName: string,
   responsesRaw: Responses,
-  parameterType: { typename: string; imports: string } | null,
+  parameterType: { typename: string; imports: ImportSource } | null,
 ): { types: ResponseTypes } => {
   const lines: string[] = [];
-  const imports: string[] = ["import { type RequestMeta } from '../request.js';"];
+  const imports: ImportCollection = new ImportCollection();
+  imports.append(typeboxImportStatements);
+  imports.push('RequestMeta', 'request.js', true);
+
   if (parameterType !== null) {
-    imports.push(parameterType.imports);
+    imports.append(parameterType.imports);
   }
   const responses = buildResponses(responsesRaw);
   lines.push(...responses.code);
-  imports.push(...responses.imports);
+  imports.append(responses.imports);
 
   if (parameterType) {
     lines.push(`type Request = RequestMeta & { parameters: ${parameterType.typename} };`);
@@ -134,7 +138,7 @@ const buildResponseTypes = (
 
   lines.push(
     template.lines(
-      responses.types.map(({ responseCode, typeName, validatorName }) =>
+      ...responses.types.map(({ responseCode, typeName, validatorName }) =>
         template.concat(
           '| {',
           ' response: Response;',
@@ -152,10 +156,7 @@ const buildResponseTypes = (
     ),
   );
 
-  writeSourceFile(
-    outFile,
-    template.lines(...deduplicate([typeboxImportStatements, ...imports]), '', ...lines),
-  );
+  writeSourceFile(outFile, template.lines(resolveImports(outFile, imports), '', ...lines));
 
   return { types: responses.types };
 };

@@ -4,17 +4,17 @@ import type Parameter from '../openapi/Parameter.js';
 import type Reference from '../openapi/Reference.js';
 import type RequestBody from '../openapi/RequestBody.js';
 
-import { deduplicate } from '../../shared/deduplicate.js';
 import GenerationError from '../../shared/GenerationError.js';
+import { ImportCollection, ImportSource, resolveImports } from '../../shared/importSource.js';
 import { default as rootLogger } from '../../shared/logger.js';
-import typeboxImportStatements from '../../shared/modelGeneration/typeboxImportStatements.js';
+import PathInfo from '../../shared/PathInfo.js';
 import { sanitizeVariableName, uppercaseFirst } from '../../shared/sanitization.js';
 import template from '../../shared/templater.js';
-import buildParameterTypes from './buildParameterTypes.js';
 import buildResponseReturn from './buildResponseReturn.js';
 import buildResponseTypes, { ResponseTypes } from './buildResponseTypes.js';
 import buildUrl from './buildUrl.js';
 import destructureParameters from './destructureParameters.js';
+import generateFunctionParameterType from './generateFunctionParameterType.js';
 import commentSanitize from './helpers/commentSanitize.js';
 import refUnsupported from './helpers/refUnsupported.js';
 import routeToOperationName from './helpers/routeToOperationName.js';
@@ -60,7 +60,7 @@ export type FunctionMetadata = {
   takesParameters: boolean;
   requiresParameters: boolean;
   importPath: string;
-  systemPath: string;
+  systemPath: PathInfo;
 };
 /**
  * Generate a function from an openapi operation
@@ -75,12 +75,12 @@ const operationToFunction = (
   route: string,
   method: string,
   operation: Operation,
-  outDir: string,
+  outDir: PathInfo,
 ): FunctionMetadata => {
   const operationName = operation.operationId ?? routeToOperationName(route, method);
 
   const lines: string[] = [];
-  const imports: string[] = [];
+  const imports = new ImportCollection();
 
   const parameters = operation.parameters ?? [];
   const requestBody = operation.requestBody;
@@ -108,67 +108,84 @@ const operationToFunction = (
     }
   }
 
-  lines.push(
-    template.lines(
-      "import { type ConfigOverrides } from '../clientConfig.js';",
-      //"import { type ResponseBrand } from '../typeBranding.js';",
-      "import { type ApiFunction } from '../apiFunction.js';",
-      "import { HTTPInformational, HTTPSuccess, HTTPRedirection, HTTPClientError, HTTPServerError } from '../HTTPStatusCode.js';",
-      '',
-    ),
+  imports.push('ConfigOverrides', 'clientConfig.js', true);
+  imports.push('ApiFunction', 'apiFunction.js', true);
+  imports.push(
+    ['HTTPInformational', 'HTTPSuccess', 'HTTPRedirection', 'HTTPClientError', 'HTTPServerError'],
+    'HTTPStatusCode.js',
   );
 
   const parameterTypeName = `${uppercaseFirst(operationName)}Params`;
   const takesParameters = requestBody != null || parameters.length > 0;
   const requiredParameters = requestBody != null || parameters.some((param) => param.required);
-  let parameterTypeImport = null;
+  let parameterTypeImport: { typename: string; imports: ImportSource } | null = null;
 
   let bodyContentType: string | null = null;
   if (takesParameters) {
-    const { contentType } = buildParameterTypes(
-      `${outDir}/functions/${operationName}.parameters.ts`,
+    const parameterType = generateFunctionParameterType(
+      {
+        ...outDir,
+        filename: `${operationName}.parameters.ts`,
+      },
       parameterTypeName,
       parameters,
       requestBody,
     );
-    bodyContentType = contentType;
+    bodyContentType = parameterType.contentType;
     parameterTypeImport = {
       typename: parameterTypeName,
-      imports: `import type ${parameterTypeName} from './${operationName}.parameters.js';`,
+      imports: parameterType.import,
     };
-    lines.push(parameterTypeImport.imports, '');
+    imports.append(parameterType.import);
   }
 
   const responseTypeName = `${uppercaseFirst(operationName)}Response`;
   let responseTypes: ResponseTypes | null = null;
   if (operation.responses && Object.keys(operation.responses).length > 0) {
     const { types } = buildResponseTypes(
-      `${outDir}/functions/${operationName}.responses.ts`,
+      {
+        ...outDir,
+        filename: `${operationName}.responses.ts`,
+      },
       responseTypeName,
       operation.responses,
       parameterTypeImport,
     );
     responseTypes = types;
+
+    for (const type of types) {
+      if (type.imports) {
+        imports.append(type.imports);
+      }
+    }
+
+    imports.append({
+      file: {
+        path: `${outDir.path}/${operationName}.responses.js`,
+        internal: true,
+      },
+      entries: [
+        {
+          item: responseTypeName,
+          typeOnly: true,
+          default: true,
+        },
+      ],
+    });
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     const typeImports = types.flatMap(({ imports, typeName }) =>
-      typeName && imports === undefined ? `type ${typeName}` : [],
+      typeName && imports === undefined ? typeName : [],
     );
+    for (const typeImport of typeImports) {
+      imports.push(typeImport, `${outDir.path}/${operationName}.responses.js`, true);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     const validatorImports = types.flatMap(({ imports, validatorName }) =>
       validatorName && imports === undefined ? validatorName : [],
     );
-    const otherImports = types
-      // eslint-disable-next-line @typescript-eslint/no-shadow
-      .filter(({ imports }) => imports != null)
-      // eslint-disable-next-line @typescript-eslint/no-shadow
-      .flatMap(({ imports }) => imports);
-    lines.push(
-      template.lines(
-        `import type ${responseTypeName} from './${operationName}.responses.js';`,
-        typeImports.length > 0 &&
-          `import { ${[...typeImports, validatorImports].join(', ')} } from './${operationName}.responses.js';`,
-        otherImports,
-        '',
-      ),
-    );
+    for (const validator of validatorImports) {
+      imports.push(validator, `${outDir.path}/${operationName}.responses.js`);
+    }
   }
 
   const queryParams = parameters.filter((param) => param.in === 'query');
@@ -279,8 +296,11 @@ const operationToFunction = (
   );
 
   writeSourceFile(
-    `${outDir}/functions/${operationName}.ts`,
-    template.lines(typeboxImportStatements, '', ...deduplicate(imports), '', ...lines),
+    {
+      ...outDir,
+      filename: `${operationName}.ts`,
+    },
+    template.lines(resolveImports(outDir, imports), ...lines),
   );
 
   return {
@@ -288,7 +308,10 @@ const operationToFunction = (
     requiresParameters: requiredParameters,
     takesParameters: takesParameters,
     importPath: `./functions/${operationName}.js`,
-    systemPath: `${outDir}/functions/${operationName}.ts`,
+    systemPath: {
+      ...outDir,
+      filename: `${operationName}.ts`,
+    },
   };
 };
 

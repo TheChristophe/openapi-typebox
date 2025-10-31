@@ -10,7 +10,7 @@ import GenerationError from '../GenerationError.js';
 import { default as rootLogger } from '../logger.js';
 import template from '../templater.js';
 import CodeEmitter, { filterExtraOptions, Options } from './emitting/CodeEmitter.js';
-import { CodegenSlice, joinSubSlices } from './joinSlices.js';
+import { CodegenSlice, ImportSlice, joinSubSlices, SourceSlice } from './joinSlices.js';
 import MissingReferenceError from './MissingReferenceError.js';
 import {
   type AllOfSchema,
@@ -49,16 +49,14 @@ const nullableWarning = () => {
 };
 
 const generator = (emitter: CodeEmitter) => {
-  const resolveObjectReference = (schema: RefSchema): CodegenSlice => {
+  const resolveObjectReference = (schema: RefSchema): ImportSlice => {
     const entry = context.schemas.lookup(schema['$ref']);
 
     if (entry == null) {
       throw new MissingReferenceError(schema['$ref']);
     }
 
-    // TODO: use other source of truth for imports instead of building manually
-    //       it includes import for schema & type
-    return emitter.import(entry.typeName);
+    return emitter.import(entry);
   };
 
   const parseObject = (schema: ObjectSchema): CodegenSlice => {
@@ -248,7 +246,7 @@ const generator = (emitter: CodeEmitter) => {
    *
    * @throws GenerationError if an unexpected schema was given
    */
-  const generate = (schema: JSONSchema7Definition): CodegenSlice => {
+  const generate = (schema: JSONSchema7Definition): SourceSlice => {
     if (typeof schema === 'boolean') {
       return { code: JSON.stringify(schema) };
     }
@@ -267,9 +265,9 @@ const generator = (emitter: CodeEmitter) => {
       };
     }
 
-    if (isRef(schema)) {
+    /*if (isRef(schema)) {
       return resolveObjectReference(schema);
-    } else if (isObjectSchema(schema)) {
+    } else */ if (isObjectSchema(schema)) {
       return parseObject(schema);
     } else if (isEnumSchema(schema)) {
       return parseEnum(schema);
@@ -299,7 +297,7 @@ const generator = (emitter: CodeEmitter) => {
     return parseUnknown();
   };
 
-  const topLevelGenerate = (schema: JSONSchema7Definition): CodegenSlice => {
+  return (schema: JSONSchema7Definition): SourceSlice => {
     if (typeof schema === 'boolean') {
       return { code: JSON.stringify(schema) };
     }
@@ -312,9 +310,6 @@ const generator = (emitter: CodeEmitter) => {
     }
     return generate(schema);
   };
-
-  return topLevelGenerate;
-  //return generate;
 };
 
 export default generator;
