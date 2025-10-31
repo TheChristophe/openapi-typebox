@@ -109,7 +109,6 @@ const operationToFunction = (
   }
 
   imports.push('ConfigOverrides', 'clientConfig.js', true);
-  imports.push('ApiFunction', 'apiFunction.js', true);
   imports.push(
     ['HTTPInformational', 'HTTPSuccess', 'HTTPRedirection', 'HTTPClientError', 'HTTPServerError'],
     'HTTPStatusCode.js',

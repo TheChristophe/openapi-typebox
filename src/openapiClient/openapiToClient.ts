@@ -23,7 +23,7 @@ const processPaths = (
   logger.info('Mkdir', resolveAbsolutePath(outDir));
   fs.mkdirSync(resolveAbsolutePath(outDir), { recursive: true });
 
-  const sharedFiles = ['apiFunction.ts', 'clientConfig.ts', 'HTTPStatusCode.ts', 'request.ts'];
+  const sharedFiles = ['clientConfig.ts', 'HTTPStatusCode.ts', 'request.ts'];
   for (const file of sharedFiles) {
     const filePath = {
       basePath: outDir.basePath,
