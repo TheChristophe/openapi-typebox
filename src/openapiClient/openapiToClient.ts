@@ -140,15 +140,12 @@ const generatePackage = (version: string, outDir: PathInfo) => {
         }),
         scripts: {
           build: 'tsc',
-          //prepublishOnly: 'npm run build',
         },
         dependencies: {
-          // TODO: find a good way to keep these updated
           '@sinclair/typebox': '^0.34',
         },
         devDependencies: {
-          // TODO: find a good way to keep these updated
-          '@types/node': '^22',
+          '@types/node': '^24',
           typescript: '^5',
         },
         module: './dist/index.js',
@@ -156,28 +153,8 @@ const generatePackage = (version: string, outDir: PathInfo) => {
         sideEffects: false,
         type: 'module',
         exports: {
-          /*
-          './functions': {
-            types: './dist/functions/index.js',
-            import: './dist/functions/index.js',
-            default: './dist/functions/index.js',
-          },
-          */
-          './models': {
-            types: './dist/models/index.js',
-            import: './dist/models/index.js',
-            default: './dist/models/index.js',
-          },
-          './*': {
-            types: './dist/*.js',
-            import: './dist/*.js',
-            default: './dist/*.js',
-          },
-          './*.js': {
-            types: './dist/*.js',
-            import: './dist/*.js',
-            default: './dist/*.js',
-          },
+          './models': './dist/models/index.js',
+          './*': './dist/*',
         },
         files: ['/dist', '/package.json', '/README.md'],
       },
