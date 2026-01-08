@@ -156,7 +156,7 @@ const generatePackage = (version: string, outDir: PathInfo) => {
           './models': './dist/models/index.js',
           './*': './dist/*',
         },
-        files: ['/dist', '/package.json', '/README.md'],
+        files: ['dist', 'package.json', 'tsconfig.json', 'README.md'],
       },
       null,
       2,
@@ -169,7 +169,7 @@ const generatePackage = (version: string, outDir: PathInfo) => {
         compilerOptions: {
           declaration: true,
           target: 'es2020',
-          module: 'NodeNext',
+          module: 'nodenext',
           noImplicitAny: true,
           outDir: 'dist',
           rootDir: '.',
