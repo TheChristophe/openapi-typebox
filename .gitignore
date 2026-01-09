@@ -9,3 +9,9 @@ schema.json
 schema.yaml
 client/
 dist/
+
+combined.log
+
+fox-api-v2.json
+foxapi.yaml
+spec.json
