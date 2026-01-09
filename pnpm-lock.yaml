@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@sinclair/typebox':
-        specifier: ^0.34.11
-        version: 0.34.11
       '@types/json-schema':
         specifier: ^7.0.15
         version: 7.0.15
@@ -41,6 +38,9 @@ importers:
       triple-beam:
         specifier: ^1.4.1
         version: 1.4.1
+      typebox:
+        specifier: ^1.0.76
+        version: 1.0.76
       typescript:
         specifier: ^5.7.2
         version: 5.7.2
@@ -178,9 +178,6 @@ packages:
 
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
-
-  '@sinclair/typebox@0.34.11':
-    resolution: {integrity: sha512-zE9pWGVSG82z+sFO+oUmqmqRVm8Wg5sVhmljYi1fDhLOSphBBy939QmC/qXcKFWqTiRJ6keyG4y75bIoTPRBAw==}
 
   '@so-ric/colorspace@1.1.6':
     resolution: {integrity: sha512-/KiKkpHNOBgkFJwu9sh48LkHSMYGyuTcSFK/qMBdnOAlrRJzRSXAOFB5qwzaVQuDl8wAvHVMkaASQDReTahxuw==}
@@ -1240,6 +1237,9 @@ packages:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
 
+  typebox@1.0.76:
+    resolution: {integrity: sha512-BAMoCFfnoAJk45FwY9n2GTyQUpGuEq6R3VogsXED+qWZ46v2srKNO5/s/q49C9fpYfZL8UcoQHGIvTorfmVJ6g==}
+
   typed-array-buffer@1.0.2:
     resolution: {integrity: sha512-gEymJYKZtKXzzBzM4jqa9w6Q1Jjm7x2d+sh19AdsD4wqnMPDYyvwpsIc2Q/835kHuo3BEQ7CjelGhfTsoBb2MQ==}
     engines: {node: '>= 0.4'}
@@ -1445,8 +1445,6 @@ snapshots:
       fastq: 1.17.1
 
   '@rtsao/scc@1.1.0': {}
-
-  '@sinclair/typebox@0.34.11': {}
 
   '@so-ric/colorspace@1.1.6':
     dependencies:
@@ -2620,6 +2618,8 @@ snapshots:
   type-check@0.4.0:
     dependencies:
       prelude-ls: 1.2.1
+
+  typebox@1.0.76: {}
 
   typed-array-buffer@1.0.2:
     dependencies:

@@ -1,6 +1,6 @@
 {
   "name": "@thechristophe/openapi-typebox",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "bin": "src/openapiClient/cli.js",
   "repository": {
     "type": "git",
@@ -14,14 +14,14 @@
   "homepage": "https://github.com/thechristophe/openapi-typebox#readme",
   "scripts": {
     "build": "tsc --project tsconfig.build.json && pnpm copy-files",
-    "copy-files": "copyfiles -f src/shared/output/* ./dist/shared/output/ && copyfiles -f src/openapiClient/output/* ./dist/openapiClient/output/",
+    "copy-files": "copyfiles -f src/output/* ./dist/output/",
     "clean": "rimraf dist/",
     "prepublishOnly": "pnpm clean && pnpm build",
     "lint": "eslint src",
     "lint:export": "eslint --output-file eslint_report.json --format json src",
     "lint:formatting": "prettier --check .",
-    "type-check": "tsc --noEmit",
-    "cli": "node ./dist/openapiClient/cli.js"
+    "lint:types": "tsc --noEmit",
+    "cli": "node ./dist/client-cli.js"
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.4.1",
@@ -39,7 +39,6 @@
     "typescript-eslint": "^8.15.0"
   },
   "dependencies": {
-    "@sinclair/typebox": "^0.34.11",
     "@types/json-schema": "^7.0.15",
     "@types/lodash": "^4.17.13",
     "@types/node": "^20.17.7",
@@ -50,6 +49,7 @@
     "prettier": "^3.3.3",
     "prettier-plugin-organize-imports": "^4.1.0",
     "triple-beam": "^1.4.1",
+    "typebox": "^1.0.76",
     "typescript": "^5.7.2",
     "winston": "^3.18.3",
     "yaml": "^2.6.1"
