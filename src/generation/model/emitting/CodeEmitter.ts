@@ -1,6 +1,6 @@
 import { type JSONSchema7 } from 'json-schema';
-import { SchemaEntry } from '../../utility/context.js';
-import { ImportSlice } from '../joinSlices.js';
+import { type SchemaEntry } from '../../utility/context.js';
+import { type ImportSlice } from '../joinSlices.js';
 
 const typeFields = [
   'title',
@@ -25,7 +25,7 @@ export const filterExtraOptions = (schema: JSONSchema7) =>
     ) as OptionEntries[],
   ) as Options;
 
-type CodeEmitter = {
+export type CodeEmitter = {
   array: (element: string, options?: Options) => string;
   object: (children: string[], options?: Options) => string;
   annotation: (options: Options) => string | null;
@@ -50,5 +50,3 @@ type CodeEmitter = {
 
   import: (name: SchemaEntry) => ImportSlice;
 };
-
-export default CodeEmitter;

@@ -1,10 +1,10 @@
-import type MediaType from './MediaType.js';
-import type PRecord from './PRecord.js';
+import { type MediaType } from './MediaType.js';
+import { type PRecord } from './PRecord.js';
 
 /**
  * https://swagger.io/specification/#request-body-object
  */
-type RequestBody = {
+export type RequestBody = {
   /**
    * A brief description of the request body. This could contain examples of use. [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
    */
@@ -20,5 +20,3 @@ type RequestBody = {
    */
   required?: boolean;
 };
-
-export default RequestBody;

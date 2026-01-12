@@ -14,14 +14,14 @@
   "homepage": "https://github.com/thechristophe/openapi-typebox#readme",
   "scripts": {
     "build": "tsc --project tsconfig.build.json && pnpm copy-files",
-    "copy-files": "copyfiles -f src/output/* ./dist/output/",
+    "copy-files": "copyfiles -f src/output/* ./dist/src/output/",
     "clean": "rimraf dist/",
     "prepublishOnly": "pnpm clean && pnpm build",
     "lint": "eslint src",
     "lint:export": "eslint --output-file eslint_report.json --format json src",
     "lint:formatting": "prettier --check .",
     "lint:types": "tsc --noEmit",
-    "cli": "node ./dist/client-cli.js"
+    "cli": "node ./dist/src/client-cli.js"
   },
   "devDependencies": {
     "@eslint-community/eslint-plugin-eslint-comments": "^4.4.1",

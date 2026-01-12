@@ -1,11 +1,11 @@
-import { JSONSchema7 } from 'json-schema';
+import { type JSONSchema7 } from 'json-schema';
 import fs from 'node:fs';
 import schemaToModel from '../generation/model.js';
-import context, { SchemaEntry } from './utility/context.js';
+import context, { type SchemaEntry } from './utility/context.js';
 import { MissingReferenceError } from './utility/errors.js';
-import { ImportCollection, ImportSource, resolveImports } from './utility/importSource.js';
+import { ImportCollection, type ImportSource, resolveImports } from './utility/importSource.js';
 import { default as rootLogger } from './utility/logger.js';
-import PathInfo, { FileInfo } from './utility/PathInfo.js';
+import { type FileInfo, type PathInfo } from './utility/PathInfo.js';
 import template from './utility/templater.js';
 import writeSourceFile from './utility/writeSourceFile.js';
 

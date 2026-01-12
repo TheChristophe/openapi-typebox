@@ -1,6 +1,6 @@
-import { SchemaEntry } from '../../utility/context.js';
-import { ImportSlice } from '../joinSlices.js';
-import CodeEmitter, { Options } from './CodeEmitter.js';
+import { type SchemaEntry } from '../../utility/context.js';
+import { type ImportSlice } from '../joinSlices.js';
+import { type CodeEmitter, type Options } from './CodeEmitter.js';
 
 class TypeboxEmitter implements CodeEmitter {
   #formatExtraOptions = (options: Options | undefined = undefined, comma = true) => {

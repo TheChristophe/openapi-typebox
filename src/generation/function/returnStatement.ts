@@ -1,5 +1,6 @@
-import type Responses from '../../openapi/Responses.js';
-import { ResponseType, ResponseTypes } from '../response/responseTypes.js';
+import { type Response } from '../../openapi/Response.js';
+import { type Responses } from '../../openapi/Responses.js';
+import { type ResponseType, type ResponseTypes } from '../response/responseTypes.js';
 import context from '../utility/context.js';
 import template from '../utility/templater.js';
 
@@ -22,7 +23,7 @@ const buildResponseReturn = (
       continue;
     }
 
-    let resolvedResponse;
+    let resolvedResponse: Response;
     if ('$ref' in response) {
       const resolved = context.responses.lookup(response.$ref);
       if (resolved === undefined) {

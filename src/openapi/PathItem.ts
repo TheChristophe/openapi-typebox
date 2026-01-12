@@ -1,8 +1,8 @@
-import type Operation from './Operation.js';
-import type Parameter from './Parameter.js';
-import type PRecord from './PRecord.js';
-import type Reference from './Reference.js';
-import type Server from './Server.js';
+import { type Operation } from './Operation.js';
+import { type Parameter } from './Parameter.js';
+import { type PRecord } from './PRecord.js';
+import { type Reference } from './Reference.js';
+import { type Server } from './Server.js';
 
 export const OpenApiMethods = {
   GET: 'get',
@@ -15,7 +15,7 @@ export const OpenApiMethods = {
   TRACE: 'trace',
 } as const;
 type OpenApiMethod = (typeof OpenApiMethods)[keyof typeof OpenApiMethods];
-type PathItem = {
+export type PathItem = {
   // TODO: unsupported
   /**
    * Allows for a referenced definition of this path item. The referenced structure MUST be in the form of a Path Item Object. In case a Path Item Object field appears both in the defined object and the referenced object, the behavior is undefined. See the rules for resolving Relative References.
@@ -40,5 +40,3 @@ type PathItem = {
 } /**
  * A definition of a $method operation on this path.
  */ & PRecord<OpenApiMethod, Operation>;
-
-export default PathItem;

@@ -1,5 +1,5 @@
-import type Parameter from '../../openapi/Parameter.js';
-import type RequestBody from '../../openapi/RequestBody.js';
+import { type Parameter } from '../../openapi/Parameter.js';
+import { type RequestBody } from '../../openapi/RequestBody.js';
 import { needsSanitization, sanitizeVariableName } from '../utility/sanitization.js';
 import template from '../utility/templater.js';
 

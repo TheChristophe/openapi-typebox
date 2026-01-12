@@ -1,4 +1,4 @@
-import type Reference from '../../../openapi/Reference.js';
+import { type Reference } from '../../../openapi/Reference.js';
 import { NotImplementedError } from '../../utility/errors.js';
 
 function refUnsupported<T>(thing: Reference | T): asserts thing is T {

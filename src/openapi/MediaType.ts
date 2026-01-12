@@ -1,13 +1,13 @@
-import type Encoding from './Encoding.js';
-import type Example from './Example.js';
-import type JsonSchema from './JsonSchema.js';
-import type Reference from './Reference.js';
-import type PRecord from './PRecord.js';
+import { type Encoding } from './Encoding.js';
+import { type Example } from './Example.js';
+import { type JsonSchema } from './JsonSchema.js';
+import { type PRecord } from './PRecord.js';
+import { type Reference } from './Reference.js';
 
 /**
  * https://swagger.io/specification/#media-type-object
  */
-type MediaType = {
+export type MediaType = {
   /**
    * The schema defining the content of the request, response, or parameter.
    */
@@ -25,5 +25,3 @@ type MediaType = {
    */
   encoding?: PRecord<string, Encoding>;
 };
-
-export default MediaType;

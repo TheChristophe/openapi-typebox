@@ -1,4 +1,4 @@
-import PathInfo, { FileInfo, resolveRelativePath } from './PathInfo.js';
+import { type FileInfo, type PathInfo, resolveRelativePath } from './PathInfo.js';
 import templater from './templater.js';
 
 export type ImportSource = {

@@ -1,13 +1,13 @@
-import type Header from './Header.js';
-import type Link from './Link.js';
-import type MediaType from './MediaType.js';
-import type Reference from './Reference.js';
-import type PRecord from './PRecord.js';
+import { type Header } from './Header.js';
+import { type Link } from './Link.js';
+import { type MediaType } from './MediaType.js';
+import { type PRecord } from './PRecord.js';
+import { type Reference } from './Reference.js';
 
 /**
  * https://swagger.io/specification/#response-object
  */
-type Response = {
+export type Response = {
   /**
    * A description of the response. [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
    */
@@ -25,5 +25,3 @@ type Response = {
    */
   links?: PRecord<string, Link | Reference>;
 };
-
-export default Response;

@@ -1,13 +1,13 @@
-import type Example from './Example.js';
-import type JsonSchema from './JsonSchema.js';
-import type MediaType from './MediaType.js';
-import type PRecord from './PRecord.js';
-import type Reference from './Reference.js';
+import { type Example } from './Example.js';
+import { type JsonSchema } from './JsonSchema.js';
+import { type MediaType } from './MediaType.js';
+import { type PRecord } from './PRecord.js';
+import { type Reference } from './Reference.js';
 
 /**
  * https://swagger.io/specification/#parameter-object
  */
-type Parameter = {
+export type Parameter = {
   /**
    * The name of the parameter. Parameter names are case sensitive.
    *
@@ -68,5 +68,3 @@ type Parameter = {
    */
   content?: PRecord<string, MediaType>;
 };
-
-export default Parameter;

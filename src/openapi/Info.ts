@@ -1,7 +1,7 @@
 /**
  * https://swagger.io/specification/#info-object
  */
-type Info = {
+export type Info = {
   /**
    * The title of the API.
    */
@@ -56,5 +56,3 @@ type Info = {
    */
   version: string;
 };
-
-export default Info;

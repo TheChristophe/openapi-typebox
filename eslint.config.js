@@ -98,6 +98,8 @@ const config = tseslint.config(
       '@typescript-eslint/consistent-type-imports': 'off',
       // broken?
       '@typescript-eslint/no-unnecessary-condition': 'off',
+
+      '@typescript-eslint/no-deprecated': 'warn',
     },
   },
 );

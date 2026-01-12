@@ -1,6 +1,6 @@
-import type OAuthFlows from './OAuthFlows.js';
+import { type OAuthFlows } from './OAuthFlows.js';
 
-type SecurityScheme = {
+export type SecurityScheme = {
   /**
    * A description for security scheme. [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
    */
@@ -61,5 +61,3 @@ type SecurityScheme = {
       type: 'mutualTLS';
     }
 );
-
-export default SecurityScheme;

@@ -1,15 +1,15 @@
-import type Components from './Components.js';
-import type ExternalDocumentation from './ExternalDocumentation.js';
-import type Info from './Info.js';
-import type PathItem from './PathItem.js';
-import type Paths from './Paths.js';
-import type Reference from './Reference.js';
-import type SecurityRequirements from './SecurityRequirements.js';
-import type Server from './Server.js';
-import type Tag from './Tag.js';
-import type PRecord from './PRecord.js';
+import { type Components } from './Components.js';
+import { type ExternalDocumentation } from './ExternalDocumentation.js';
+import { type Info } from './Info.js';
+import { type PathItem } from './PathItem.js';
+import { type Paths } from './Paths.js';
+import { type PRecord } from './PRecord.js';
+import { type Reference } from './Reference.js';
+import { type SecurityRequirements } from './SecurityRequirements.js';
+import { type Server } from './Server.js';
+import { type Tag } from './Tag.js';
 
-type OpenApiSpecification = {
+export type OpenApiSpecification = {
   // TODO: explicit versions
   /**
    * REQUIRED. This string MUST be the [version number](https://swagger.io/specification/#versions) of the OpenAPI Specification that the OpenAPI document uses. The openapi field SHOULD be used by tooling to interpret the OpenAPI document. This is not related to the API [info.version](https://swagger.io/specification/#info-version) string.
@@ -53,5 +53,3 @@ type OpenApiSpecification = {
    */
   externalDocs?: ExternalDocumentation;
 };
-
-export default OpenApiSpecification;

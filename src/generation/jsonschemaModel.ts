@@ -1,4 +1,4 @@
-import { JSONSchema7 } from 'json-schema';
+import { type JSONSchema7 } from 'json-schema';
 import fs from 'node:fs';
 import { readFile as read } from 'node:fs/promises';
 import path from 'node:path';

@@ -1,6 +1,6 @@
 import { type JSONSchema7 } from 'json-schema';
-import type Response from '../../openapi/Response.js';
-import { ImportMetadata } from './importSource.js';
+import { type Response } from '../../openapi/Response.js';
+import { type ImportMetadata } from './importSource.js';
 
 /**
  * Singleton

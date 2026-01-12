@@ -37,7 +37,7 @@ export type HTTPClientError =
   | 431
   | 451;
 export type HTTPServerError = 500 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 509 | 510 | 511;
-type HTTPStatusCode =
+export type HTTPStatusCode =
   | HTTPInformational
   | HTTPSuccess
   | HTTPRedirection
@@ -59,5 +59,3 @@ export const SERVER_ERROR_CODES: HTTPServerError[] = [
 export type HTTPCodeGood = HTTPSuccess | HTTPRedirection;
 export type HTTPCodeBad = HTTPClientError | HTTPServerError;
 export type HTTPCode = HTTPInformational | HTTPCodeGood | HTTPCodeBad;
-
-export default HTTPStatusCode;

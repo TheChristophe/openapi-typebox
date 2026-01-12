@@ -1,11 +1,11 @@
-import { type JSONSchema7Definition, JSONSchema7Type } from 'json-schema';
+import { type JSONSchema7Definition, type JSONSchema7Type } from 'json-schema';
 import TypeboxEmitter from './model/emitting/TypeboxEmitter.js';
 import TypescriptEmitter from './model/emitting/TypescriptEmitter.js';
 import generator from './model/generator.js';
-import { EnumSchema, isEnumSchema } from './model/schema-matchers.js';
+import { type EnumSchema, isEnumSchema } from './model/schema-matchers.js';
 import typeboxImports from './model/typeboxImports.js';
 import { GenerationError } from './utility/errors.js';
-import { ImportCollection, ImportMetadata } from './utility/importSource.js';
+import { ImportCollection, type ImportMetadata } from './utility/importSource.js';
 import { camelize, sanitizeVariableName, uppercaseFirst } from './utility/sanitization.js';
 import template from './utility/templater.js';
 

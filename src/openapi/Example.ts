@@ -1,7 +1,7 @@
 /**
  * https://swagger.io/specification/#example-object
  */
-type Example = {
+export type Example = {
   /**
    * Short description for the example.
    */
@@ -19,5 +19,3 @@ type Example = {
    */
   externalValue?: string;
 };
-
-export default Example;

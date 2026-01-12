@@ -1,6 +1,6 @@
-import type PRecord from './PRecord.js';
+import { type PRecord } from './PRecord.js';
 
-type OAuthFlow = {
+export type OAuthFlow = {
   /**
    * The authorization URL to be used for this flow. This MUST be in the form of a URL. The OAuth2 standard requires the use of TLS.
    */
@@ -18,5 +18,3 @@ type OAuthFlow = {
    */
   scopes: PRecord<string, string>;
 };
-
-export default OAuthFlow;

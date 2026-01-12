@@ -1,8 +1,8 @@
 import fs from 'node:fs';
-import type OpenApiSpec from '../openapi/index.js';
+import { type OpenApiSpecification } from '../openapi/index.js';
 import refUnsupported from './function/helpers/refUnsupported.js';
 import { buildResponseType } from './response/responseTypes.js';
-import PathInfo, { FileInfo, resolveAbsolutePath } from './utility/PathInfo.js';
+import { type FileInfo, type PathInfo, resolveAbsolutePath } from './utility/PathInfo.js';
 import context from './utility/context.js';
 import { ImportCollection, resolveImports } from './utility/importSource.js';
 import { default as rootLogger } from './utility/logger.js';
@@ -37,7 +37,7 @@ const generateResponseIndex = (location: FileInfo) => {
 };
 
 const generateResponses = (
-  responses: Required<Required<OpenApiSpec>['components']>['responses'],
+  responses: Required<Required<OpenApiSpecification>['components']>['responses'],
   outDir: PathInfo,
 ) => {
   logger.info('Mkdir', resolveAbsolutePath(outDir));

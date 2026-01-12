@@ -23,5 +23,3 @@ export const resolveRelativePath = (from: string, to: string): string => {
   }
   return p;
 };
-
-export default PathInfo;

@@ -1,23 +1,25 @@
-import { JSONSchema7 } from 'json-schema';
+import { type JSONSchema7 } from 'json-schema';
 import fs from 'node:fs';
 import YAML from 'yaml';
-import type OpenApiSpec from '../openapi/index.js';
+import { type OpenApiSpecification } from '../openapi/index.js';
 import { OpenApiMethods } from '../openapi/PathItem.js';
-import operationToFunction, { FunctionMetadata } from './function.js';
+import operationToFunction, { type FunctionMetadata } from './function.js';
 import generateModels from './models.js';
 import generateResponses from './responses.js';
 import configuration from './utility/configuration.js';
 import { NotImplementedError } from './utility/errors.js';
 import lintAndCheckFiles from './utility/lintAndCheckFiles.js';
 import { default as rootLogger } from './utility/logger.js';
-import PathInfo, { FileInfo, resolveAbsolutePath } from './utility/PathInfo.js';
+import { type FileInfo, type PathInfo, resolveAbsolutePath } from './utility/PathInfo.js';
 import template from './utility/templater.js';
 import writeSourceFile from './utility/writeSourceFile.js';
+
+import baselineTsConfig from '../../tsconfig.json' with { type: 'json' };
 
 const logger = rootLogger.child({ context: 'client' });
 
 const processPaths = (
-  paths: Required<OpenApiSpec>['paths'],
+  paths: Required<OpenApiSpecification>['paths'],
   outDir: PathInfo,
 ): FunctionMetadata[] => {
   logger.info('Mkdir', resolveAbsolutePath(outDir));
@@ -166,17 +168,16 @@ const generatePackage = (version: string, outDir: PathInfo) => {
     { ...outDir, path: '.', filename: 'tsconfig.json' },
     JSON.stringify(
       {
+        ...baselineTsConfig,
         compilerOptions: {
+          ...baselineTsConfig.compilerOptions,
           declaration: true,
-          target: 'es2020',
-          module: 'nodenext',
-          noImplicitAny: true,
           outDir: 'dist',
           rootDir: '.',
           typeRoots: ['node_modules/@types'],
-          moduleResolution: 'NodeNext',
-          allowSyntheticDefaultImports: true,
+          lib: [...baselineTsConfig.compilerOptions.lib, 'dom', 'dom.iterable'],
         },
+        include: ['**/*.ts'],
         exclude: ['dist', 'node_modules'],
       },
       null,
@@ -187,7 +188,7 @@ const generatePackage = (version: string, outDir: PathInfo) => {
 
 const client = async (specPath: string, outPath: PathInfo) => {
   // TODO: validation
-  let spec: OpenApiSpec;
+  let spec: OpenApiSpecification;
   if (['.yml', '.yaml'].some((e) => specPath.endsWith(e))) {
     const fileContents = fs.readFileSync(specPath).toString();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

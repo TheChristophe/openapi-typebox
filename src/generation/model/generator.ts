@@ -1,7 +1,7 @@
 import {
   type JSONSchema7,
   type JSONSchema7Definition,
-  JSONSchema7Type,
+  type JSONSchema7Type,
   type JSONSchema7TypeName,
 } from 'json-schema';
 import configuration from '../utility/configuration.js';
@@ -9,14 +9,19 @@ import context from '../utility/context.js';
 import { GenerationError, MissingReferenceError } from '../utility/errors.js';
 import { default as rootLogger } from '../utility/logger.js';
 import template from '../utility/templater.js';
-import CodeEmitter, { filterExtraOptions, Options } from './emitting/CodeEmitter.js';
-import { CodegenSlice, ImportSlice, joinSubSlices, SourceSlice } from './joinSlices.js';
+import { type CodeEmitter, filterExtraOptions, type Options } from './emitting/CodeEmitter.js';
+import {
+  type CodegenSlice,
+  type ImportSlice,
+  joinSubSlices,
+  type SourceSlice,
+} from './joinSlices.js';
 import {
   type AllOfSchema,
   type AnyOfSchema,
   type ArraySchema,
-  ConstSchema,
-  EnumSchema,
+  type ConstSchema,
+  type EnumSchema,
   isAllOfSchema,
   isAnyOfSchema,
   isArraySchema,
@@ -30,9 +35,9 @@ import {
   isUnknownSchema,
   type MultipleTypesSchema,
   type NotSchema,
-  ObjectSchema,
+  type ObjectSchema,
   type OneOfSchema,
-  RefSchema,
+  type RefSchema,
 } from './schema-matchers.js';
 
 const logger = rootLogger.child({ context: 'generator' });

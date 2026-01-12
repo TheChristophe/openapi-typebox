@@ -1,8 +1,8 @@
-import { SchemaEntry } from '../../utility/context.js';
+import { type SchemaEntry } from '../../utility/context.js';
 import { needsSanitization } from '../../utility/sanitization.js';
 import template from '../../utility/templater.js';
-import { ImportSlice } from '../joinSlices.js';
-import CodeEmitter, { Options } from './CodeEmitter.js';
+import { type ImportSlice } from '../joinSlices.js';
+import { type CodeEmitter, type Options } from './CodeEmitter.js';
 
 class TypescriptEmitter implements CodeEmitter {
   #docString(options: Options): string {

@@ -1,7 +1,7 @@
 /**
  * https://swagger.io/specification/#reference-object
  */
-type Reference = {
+export type Reference = {
   /**
    * REQUIRED. The reference identifier. This MUST be in the form of a URI.
    */
@@ -15,5 +15,3 @@ type Reference = {
    */
   description?: string;
 };
-
-export default Reference;

@@ -1,9 +1,9 @@
-import type PRecord from './PRecord.js';
+import { type PRecord } from './PRecord.js';
 
 /**
  * https://swagger.io/specification/#server-object
  */
-type Server = {
+export type Server = {
   /**
    * A URL to the target host. This URL supports Server Variables and MAY be relative, to indicate that the host location is relative to the location where the OpenAPI document is being served. Variable substitutions will be made when a variable is named in {brackets}.
    */
@@ -33,5 +33,3 @@ type Server = {
     }
   >;
 };
-
-export default Server;

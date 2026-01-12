@@ -246,10 +246,9 @@ type TCHAR =
 /**
  * https://swagger.io/specification/#runtime-expressions
  */
-type RuntimeExpression =
+export type RuntimeExpression =
   | '$url'
   | '$method'
   | '$statusCode'
   | `$request.${SOURCE}`
   | `$response.${SOURCE}`;
-export default RuntimeExpression;

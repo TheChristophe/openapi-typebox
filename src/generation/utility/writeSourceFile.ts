@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import { default as rootLogger } from './logger.js';
-import { FileInfo, resolveAbsolutePath } from './PathInfo.js';
+import { type FileInfo, resolveAbsolutePath } from './PathInfo.js';
 
 const logger = rootLogger.child({ context: 'write' });
 

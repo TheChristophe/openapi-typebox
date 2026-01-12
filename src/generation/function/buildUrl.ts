@@ -1,4 +1,4 @@
-import type Parameter from '../../openapi/Parameter.js';
+import { type Parameter } from '../../openapi/Parameter.js';
 import template from '../utility/templater.js';
 import substituteParams from './helpers/substituteParams.js';
 

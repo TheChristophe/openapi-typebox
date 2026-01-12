@@ -1,7 +1,7 @@
 /**
  * https://swagger.io/specification/#external-documentation-object
  */
-type ExternalDocumentation = {
+export type ExternalDocumentation = {
   /**
    * A description of the target documentation. [CommonMark syntax](https://spec.commonmark.org/) MAY be used for rich text representation.
    */
@@ -11,5 +11,3 @@ type ExternalDocumentation = {
    */
   url: string;
 };
-
-export default ExternalDocumentation;

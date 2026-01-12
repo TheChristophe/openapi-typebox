@@ -1,7 +1,7 @@
-import type Operation from '../openapi/Operation.js';
-import type Parameter from '../openapi/Parameter.js';
-import type Reference from '../openapi/Reference.js';
-import type RequestBody from '../openapi/RequestBody.js';
+import { type Operation } from '../openapi/Operation.js';
+import { type Parameter } from '../openapi/Parameter.js';
+import { type Reference } from '../openapi/Reference.js';
+import { type RequestBody } from '../openapi/RequestBody.js';
 import writeSourceFile from './utility/writeSourceFile.js';
 
 import buildUrl from './function/buildUrl.js';
@@ -11,11 +11,11 @@ import routeToOperationName from './function/helpers/routeToOperationName.js';
 import destructureParameters from './function/parameterDestructuring.js';
 import generateFunctionParameterType from './function/parameterType.js';
 import buildResponseReturn from './function/returnStatement.js';
-import buildResponseTypes, { ResponseTypes } from './response/responseTypes.js';
+import buildResponseTypes, { type ResponseTypes } from './response/responseTypes.js';
 import { GenerationError } from './utility/errors.js';
-import { ImportCollection, ImportSource, resolveImports } from './utility/importSource.js';
+import { ImportCollection, type ImportSource, resolveImports } from './utility/importSource.js';
 import { default as rootLogger } from './utility/logger.js';
-import PathInfo, { FileInfo } from './utility/PathInfo.js';
+import { type FileInfo, type PathInfo } from './utility/PathInfo.js';
 import { sanitizeVariableName, uppercaseFirst } from './utility/sanitization.js';
 import template from './utility/templater.js';
 

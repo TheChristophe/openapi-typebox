@@ -1,15 +1,15 @@
-import { JSONSchema7Definition } from 'json-schema';
-import Parameter from '../../openapi/Parameter.js';
-import type RequestBody from '../../openapi/RequestBody.js';
+import { type JSONSchema7Definition } from 'json-schema';
+import { type Parameter } from '../../openapi/Parameter.js';
+import { type RequestBody } from '../../openapi/RequestBody.js';
 import schemaToModel from '../model.js';
 import {
   ImportCollection,
-  ImportSource,
+  type ImportSource,
   resolveImports,
   toImportPath,
 } from '../utility/importSource.js';
 import { default as rootLogger } from '../utility/logger.js';
-import { FileInfo } from '../utility/PathInfo.js';
+import { type FileInfo } from '../utility/PathInfo.js';
 import template from '../utility/templater.js';
 import writeSourceFile from '../utility/writeSourceFile.js';
 

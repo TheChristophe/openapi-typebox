@@ -1,9 +1,9 @@
-import type ExternalDocumentation from './ExternalDocumentation.js';
+import { type ExternalDocumentation } from './ExternalDocumentation.js';
 
 /**
  * https://swagger.io/specification/#tag-object
  */
-type Tag = {
+export type Tag = {
   /**
    * The name of the tag.
    */
@@ -17,5 +17,3 @@ type Tag = {
    */
   externalDocs?: ExternalDocumentation;
 };
-
-export default Tag;

@@ -1,4 +1,4 @@
-import { ImportCollection, ImportSource } from '../utility/importSource.js';
+import { ImportCollection, type ImportSource } from '../utility/importSource.js';
 
 export type CodegenSlice = {
   /**

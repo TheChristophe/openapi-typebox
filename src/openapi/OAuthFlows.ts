@@ -1,6 +1,6 @@
-import type OAuthFlow from './OAuthFlow.js';
+import { type OAuthFlow } from './OAuthFlow.js';
 
-type OAuthFlows = {
+export type OAuthFlows = {
   /**
    * Configuration for the OAuth Implicit flow
    */
@@ -18,5 +18,3 @@ type OAuthFlows = {
    */
   authorizationCode?: Pick<OAuthFlow, 'authorizationUrl' | 'tokenUrl' | 'refreshUrl' | 'scopes'>;
 };
-
-export default OAuthFlows;

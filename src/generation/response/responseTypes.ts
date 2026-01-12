@@ -1,17 +1,17 @@
-import Response from '../../openapi/Response.js';
-import type Responses from '../../openapi/Responses.js';
+import { type Response } from '../../openapi/Response.js';
+import { type Responses } from '../../openapi/Responses.js';
 import schemaToModel from '../model.js';
 import typeboxImports from '../model/typeboxImports.js';
-import context, { ResponseEntry } from '../utility/context.js';
+import context, { type ResponseEntry } from '../utility/context.js';
 import { GenerationError } from '../utility/errors.js';
 import {
   ImportCollection,
-  ImportMetadata,
-  ImportSource,
+  type ImportMetadata,
+  type ImportSource,
   resolveImports,
   toImportPath,
 } from '../utility/importSource.js';
-import { FileInfo } from '../utility/PathInfo.js';
+import { type FileInfo } from '../utility/PathInfo.js';
 import template from '../utility/templater.js';
 import writeSourceFile from '../utility/writeSourceFile.js';
 

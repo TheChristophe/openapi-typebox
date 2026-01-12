@@ -1,17 +1,17 @@
-import type Callback from './Callback.js';
-import type ExternalDocumentation from './ExternalDocumentation.js';
-import type Parameter from './Parameter.js';
-import type Reference from './Reference.js';
-import type RequestBody from './RequestBody.js';
-import type Responses from './Responses.js';
-import type SecurityRequirements from './SecurityRequirements.js';
-import type Server from './Server.js';
-import type PRecord from './PRecord.js';
+import { type Callback } from './Callback.js';
+import { type ExternalDocumentation } from './ExternalDocumentation.js';
+import { type Parameter } from './Parameter.js';
+import { type PRecord } from './PRecord.js';
+import { type Reference } from './Reference.js';
+import { type RequestBody } from './RequestBody.js';
+import { type Responses } from './Responses.js';
+import { type SecurityRequirements } from './SecurityRequirements.js';
+import { type Server } from './Server.js';
 
 /**
  * https://swagger.io/specification/#operation-object
  */
-type Operation = {
+export type Operation = {
   /**
    * A list of tags for API documentation control. Tags can be used for logical grouping of operations by resources or any other qualifier.
    */
@@ -61,5 +61,3 @@ type Operation = {
    */
   servers?: Array<Server>;
 };
-
-export default Operation;

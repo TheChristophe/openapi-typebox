@@ -4,8 +4,10 @@ import * as prettier from 'prettier';
 import * as ts from 'typescript';
 import configuration from './configuration.js';
 import { default as rootLogger } from './logger.js';
-import PathInfo, { resolveAbsolutePath } from './PathInfo.js';
+import { type PathInfo, resolveAbsolutePath } from './PathInfo.js';
 import walk from './walk.js';
+
+import baselineTsConfig from '../../../tsconfig.json' with { type: 'json' };
 
 const logger = rootLogger.child({
   context: 'sanitize',
@@ -25,16 +27,22 @@ const read = promisify(fs.readFile);
 const lintAndCheckFiles = async (outDir: string, files: PathInfo[]) => {
   if (configuration.compile) {
     logger.info('Compiling...');
+    const config = ts.convertCompilerOptionsFromJson(baselineTsConfig.compilerOptions, './');
+    if ('incremental' in config.options) {
+      delete config.options['incremental'];
+    }
     const program = ts.createProgram(files.map(resolveAbsolutePath), {
-      declaration: true,
-      target: ts.ScriptTarget.ES2020,
+      ...config.options,
+      // different typing as tsconfig.json
+      target: ts.ScriptTarget.ESNext,
       module: ts.ModuleKind.NodeNext,
+      moduleResolution: ts.ModuleResolutionKind.NodeNext,
+
+      declaration: true,
       noImplicitAny: true,
       outDir: `${outDir}/dist`,
       rootDir: outDir,
       typeRoots: ['node_modules/@types'],
-      moduleResolution: ts.ModuleResolutionKind.NodeNext,
-      allowSyntheticDefaultImports: true,
       exclude: ['dist', 'node_modules'],
     });
     const emitResult = program.emit();

@@ -1,20 +1,20 @@
-import type Callback from './Callback.js';
-import type Example from './Example.js';
-import type Header from './Header.js';
-import type JsonSchema from './JsonSchema.js';
-import type Link from './Link.js';
-import type Parameter from './Parameter.js';
-import type PathItem from './PathItem.js';
-import type PRecord from './PRecord.js';
-import type Reference from './Reference.js';
-import type RequestBody from './RequestBody.js';
-import type Response from './Response.js';
-import type SecurityScheme from './SecurityScheme.js';
+import { type Callback } from './Callback.js';
+import { type Example } from './Example.js';
+import { type Header } from './Header.js';
+import { type JsonSchema } from './JsonSchema.js';
+import { type Link } from './Link.js';
+import { type Parameter } from './Parameter.js';
+import { type PathItem } from './PathItem.js';
+import { type PRecord } from './PRecord.js';
+import { type Reference } from './Reference.js';
+import { type RequestBody } from './RequestBody.js';
+import { type Response } from './Response.js';
+import { type SecurityScheme } from './SecurityScheme.js';
 
 /**
  * https://swagger.io/specification/#operation-object
  */
-type Components = {
+export type Components = {
   /**
    * An object to hold reusable [Schema Objects](https://swagger.io/specification/#schema-object).
    */
@@ -56,5 +56,3 @@ type Components = {
    */
   pathItems?: PRecord<string, PathItem>;
 };
-
-export default Components;

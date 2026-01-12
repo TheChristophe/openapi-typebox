@@ -1,11 +1,11 @@
-import type RuntimeExpression from './RuntimeExpression.js';
-import type Server from './Server.js';
-import type PRecord from './PRecord.js';
+import { type PRecord } from './PRecord.js';
+import { type RuntimeExpression } from './RuntimeExpression.js';
+import { type Server } from './Server.js';
 
 /**
  * https://swagger.io/specification/#link-object
  */
-type Link = (
+export type Link = (
   | {
       /**
        * A relative or absolute URI reference to an OAS operation. This field is mutually exclusive of the operationId field, and MUST point to an [Operation Object](https://swagger.io/specification/#operation-object). Relative operationRef values MAY be used to locate an existing [Operation Object](https://swagger.io/specification/#operation-object) in the OpenAPI definition. See the rules for resolving [Relative References](https://swagger.io/specification/#relative-references-in-uris).
@@ -38,5 +38,3 @@ type Link = (
    */
   server?: Server;
 };
-
-export default Link;
