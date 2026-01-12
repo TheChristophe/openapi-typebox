@@ -2,9 +2,14 @@ import { JSONSchema7Definition } from 'json-schema';
 import Parameter from '../../openapi/Parameter.js';
 import type RequestBody from '../../openapi/RequestBody.js';
 import schemaToModel from '../model.js';
-import { ImportCollection, ImportSource, resolveImports } from '../utility/importSource.js';
+import {
+  ImportCollection,
+  ImportSource,
+  resolveImports,
+  toImportPath,
+} from '../utility/importSource.js';
 import { default as rootLogger } from '../utility/logger.js';
-import PathInfo from '../utility/PathInfo.js';
+import { FileInfo } from '../utility/PathInfo.js';
 import template from '../utility/templater.js';
 import writeSourceFile from '../utility/writeSourceFile.js';
 
@@ -123,7 +128,7 @@ const buildParameterType = (typeName: string, parameters: Parameter[]): TypeInfo
 };
 
 const generateFunctionParameterType = (
-  outFile: PathInfo,
+  outFile: FileInfo,
   typeName: string,
   parameters: Parameter[] = [],
   requestBody?: RequestBody,
@@ -173,8 +178,7 @@ const generateFunctionParameterType = (
     contentType,
     import: {
       file: {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        path: `${outFile.path}/${outFile.filename!.replace('.ts', '.js')}`,
+        path: toImportPath(outFile),
         internal: true,
       },
       entries: [

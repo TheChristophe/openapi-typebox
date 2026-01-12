@@ -1,13 +1,17 @@
 import path from 'node:path';
 
-type PathInfo = {
+export type PathInfo = {
   basePath: string;
   path: string;
-  filename?: string;
+};
+export type FileInfo = {
+  basePath: string;
+  path: string;
+  filename: string;
 };
 
-export const resolveAbsolutePath = (where: PathInfo): string => {
-  return where.filename
+export const resolveAbsolutePath = (where: PathInfo | FileInfo): string => {
+  return 'filename' in where
     ? path.resolve(where.basePath, where.path, where.filename)
     : path.resolve(where.basePath, where.path);
 };

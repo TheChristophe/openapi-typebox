@@ -18,6 +18,10 @@ const buildResponseReturn = (
     : {};
 
   for (const [statusCode, response] of Object.entries(responses)) {
+    if (response == null) {
+      continue;
+    }
+
     let resolvedResponse;
     if ('$ref' in response) {
       const resolved = context.responses.lookup(response.$ref);
@@ -58,8 +62,10 @@ const buildResponseReturn = (
         template.lines(
           'return {',
           `  status: ${statusCode},`,
-          responseType.typeName && `    data: await response.blob() as ${responseType.typeName},`,
-          responseType.validatorName && `    validator: ${responseType.validatorName},`,
+          responseType.responseEntry?.typeName &&
+            `    data: await response.blob() as ${responseType.responseEntry?.typeName},`,
+          responseType.responseEntry?.validatorName &&
+            `    validator: ${responseType.responseEntry?.validatorName},`,
           '  validator: ',
           '  response,',
           '  request: requestMeta,',
@@ -71,8 +77,10 @@ const buildResponseReturn = (
         template.lines(
           'return {',
           `  status: ${statusCode},`,
-          responseType.typeName && `    data: await response.json() as ${responseType.typeName},`,
-          responseType.validatorName && `    validator: ${responseType.validatorName},`,
+          responseType.responseEntry?.typeName &&
+            `    data: await response.json() as ${responseType.responseEntry?.typeName},`,
+          responseType.responseEntry?.validatorName &&
+            `    validator: ${responseType.responseEntry?.validatorName},`,
           '  response,',
           '  request: requestMeta,',
           '};',
@@ -90,10 +98,10 @@ const buildResponseReturn = (
         'if (response.status !== 0) {',
         '  return {',
         "    status: 'default',",
-        defaultResponseTypename.typeName &&
-          `    data: await response.json() as ${defaultResponseTypename.typeName},`,
-        defaultResponseTypename.validatorName &&
-          `    validator: ${defaultResponseTypename.validatorName},`,
+        defaultResponseTypename.responseEntry?.typeName &&
+          `    data: await response.json() as ${defaultResponseTypename.responseEntry?.typeName},`,
+        defaultResponseTypename.responseEntry?.validatorName &&
+          `    validator: ${defaultResponseTypename.responseEntry?.validatorName},`,
         '    response,',
         '    request: requestMeta,',
         '  };',

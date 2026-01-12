@@ -24,7 +24,7 @@ export type SchemaEntry = {
    */
   raw: JSONSchema7;
 };
-type ResponseEntry = {
+export type ResponseEntry = {
   /**
    * Name of typescript type
    */

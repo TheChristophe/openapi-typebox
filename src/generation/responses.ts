@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import type OpenApiSpec from '../openapi/index.js';
 import refUnsupported from './function/helpers/refUnsupported.js';
 import { buildResponseType } from './response/responseTypes.js';
-import PathInfo, { resolveAbsolutePath } from './utility/PathInfo.js';
+import PathInfo, { FileInfo, resolveAbsolutePath } from './utility/PathInfo.js';
 import context from './utility/context.js';
 import { ImportCollection, resolveImports } from './utility/importSource.js';
 import { default as rootLogger } from './utility/logger.js';
@@ -11,8 +11,8 @@ import writeSourceFile from './utility/writeSourceFile.js';
 
 const logger = rootLogger.child({ context: 'response' });
 
-const generateResponseIndex = (location: PathInfo) => {
-  const destination: PathInfo = {
+const generateResponseIndex = (location: FileInfo) => {
+  const destination: FileInfo = {
     ...location,
     filename: 'index.ts',
   };

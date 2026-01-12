@@ -10,7 +10,7 @@ import configuration from './utility/configuration.js';
 import { NotImplementedError } from './utility/errors.js';
 import lintAndCheckFiles from './utility/lintAndCheckFiles.js';
 import { default as rootLogger } from './utility/logger.js';
-import PathInfo, { resolveAbsolutePath } from './utility/PathInfo.js';
+import PathInfo, { FileInfo, resolveAbsolutePath } from './utility/PathInfo.js';
 import template from './utility/templater.js';
 import writeSourceFile from './utility/writeSourceFile.js';
 
@@ -67,7 +67,7 @@ const processPaths = (
 
 const buildClient = (
   functions: Awaited<ReturnType<typeof operationToFunction>>[],
-  outFile: PathInfo,
+  outFile: FileInfo,
 ) => {
   functions.sort((a, b) => {
     if (a.operationName < b.operationName) {

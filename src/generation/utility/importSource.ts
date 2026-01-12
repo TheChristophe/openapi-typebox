@@ -1,4 +1,4 @@
-import PathInfo, { resolveRelativePath } from './PathInfo.js';
+import PathInfo, { FileInfo, resolveRelativePath } from './PathInfo.js';
 import templater from './templater.js';
 
 export type ImportSource = {
@@ -14,10 +14,13 @@ export type ImportSource = {
   eslintIgnores?: string[];
 };
 
+export const toImportPath = (file: FileInfo): string =>
+  `${file.path}/${file.filename.replace('.ts', '.js')}`;
+
 const appendToSources = (
   destination: ImportSource[],
   sources: ImportSource | ImportSource[] | ImportCollection,
-) => {
+): ImportSource[] => {
   const sourceArray = Array.isArray(sources)
     ? sources
     : 'imports' in sources

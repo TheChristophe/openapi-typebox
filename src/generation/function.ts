@@ -15,7 +15,7 @@ import buildResponseTypes, { ResponseTypes } from './response/responseTypes.js';
 import { GenerationError } from './utility/errors.js';
 import { ImportCollection, ImportSource, resolveImports } from './utility/importSource.js';
 import { default as rootLogger } from './utility/logger.js';
-import PathInfo from './utility/PathInfo.js';
+import PathInfo, { FileInfo } from './utility/PathInfo.js';
 import { sanitizeVariableName, uppercaseFirst } from './utility/sanitization.js';
 import template from './utility/templater.js';
 
@@ -60,7 +60,7 @@ export type FunctionMetadata = {
   takesParameters: boolean;
   requiresParameters: boolean;
   importPath: string;
-  systemPath: PathInfo;
+  systemPath: FileInfo;
 };
 /**
  * Generate a function from an openapi operation
@@ -152,12 +152,6 @@ const operationToFunction = (
     );
     responseTypes = types;
 
-    for (const type of types) {
-      if (type.imports) {
-        imports.append(type.imports);
-      }
-    }
-
     imports.append({
       file: {
         path: `${outDir.path}/${operationName}.responses.js`,
@@ -171,19 +165,14 @@ const operationToFunction = (
         },
       ],
     });
-    // eslint-disable-next-line @typescript-eslint/no-shadow
-    const typeImports = types.flatMap(({ imports, typeName }) =>
-      typeName && imports === undefined ? typeName : [],
-    );
-    for (const typeImport of typeImports) {
-      imports.push(typeImport, `${outDir.path}/${operationName}.responses.js`, true);
-    }
-    // eslint-disable-next-line @typescript-eslint/no-shadow
-    const validatorImports = types.flatMap(({ imports, validatorName }) =>
-      validatorName && imports === undefined ? validatorName : [],
-    );
-    for (const validator of validatorImports) {
-      imports.push(validator, `${outDir.path}/${operationName}.responses.js`);
+
+    for (const typeImport of types) {
+      if (typeImport.responseEntry) {
+        imports.append(typeImport.responseEntry.importMeta.type);
+        if (typeImport.responseEntry.importMeta.validator) {
+          imports.append(typeImport.responseEntry.importMeta.validator);
+        }
+      }
     }
   }
 

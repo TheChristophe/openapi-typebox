@@ -5,14 +5,14 @@ import context, { SchemaEntry } from './utility/context.js';
 import { MissingReferenceError } from './utility/errors.js';
 import { ImportCollection, ImportSource, resolveImports } from './utility/importSource.js';
 import { default as rootLogger } from './utility/logger.js';
-import PathInfo from './utility/PathInfo.js';
+import PathInfo, { FileInfo } from './utility/PathInfo.js';
 import template from './utility/templater.js';
 import writeSourceFile from './utility/writeSourceFile.js';
 
 const logger = rootLogger.child({ context: 'schema' });
 
 const generateModelIndex = (location: PathInfo) => {
-  const destination: PathInfo = {
+  const destination: FileInfo = {
     ...location,
     filename: 'index.ts',
   };
@@ -34,7 +34,7 @@ const generateModelIndex = (location: PathInfo) => {
 
 type Schema = { schema: JSONSchema7; name: string; ref: string };
 const generateModels = (schemas: Schema[], outDir: PathInfo) => {
-  const files: PathInfo[] = [];
+  const files: FileInfo[] = [];
 
   // TODO: build a tree instead, could then be parallelized
   // TODO: type assertion
@@ -75,7 +75,8 @@ const generateModels = (schemas: Schema[], outDir: PathInfo) => {
         } else {
           const sourceFile = {
             basePath: outDir.basePath,
-            path: `${outDir.path}/${schemaModel.typeName}.ts`,
+            path: outDir.path,
+            filename: `${schemaModel.typeName}.ts`,
           };
           writeSourceFile(
             sourceFile,

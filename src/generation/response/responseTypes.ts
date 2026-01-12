@@ -2,15 +2,16 @@ import Response from '../../openapi/Response.js';
 import type Responses from '../../openapi/Responses.js';
 import schemaToModel from '../model.js';
 import typeboxImports from '../model/typeboxImports.js';
-import context from '../utility/context.js';
+import context, { ResponseEntry } from '../utility/context.js';
 import { GenerationError } from '../utility/errors.js';
 import {
   ImportCollection,
   ImportMetadata,
   ImportSource,
   resolveImports,
+  toImportPath,
 } from '../utility/importSource.js';
-import PathInfo from '../utility/PathInfo.js';
+import { FileInfo } from '../utility/PathInfo.js';
 import template from '../utility/templater.js';
 import writeSourceFile from '../utility/writeSourceFile.js';
 
@@ -73,14 +74,13 @@ export const buildResponseType = (
 
 export type ResponseType = {
   responseCode: string;
-  typeName?: string;
-  validatorName?: string;
   schema?: string;
-  imports?: ImportCollection;
+  responseEntry?: ResponseEntry;
 };
 export type ResponseTypes = Array<ResponseType>;
 
 const buildResponses = (
+  outFile: FileInfo,
   responses: Responses,
 ): {
   types: ResponseTypes;
@@ -92,6 +92,10 @@ const buildResponses = (
   const imports = new ImportCollection();
 
   for (const [statusCode, response] of Object.entries(responses)) {
+    if (response == null) {
+      continue;
+    }
+
     if ('$ref' in response) {
       const r = context.responses.lookup(response.$ref);
       if (r === undefined) {
@@ -99,14 +103,8 @@ const buildResponses = (
       }
       types.push({
         responseCode: statusCode,
-        typeName: r.typeName,
-        validatorName: r.validatorName,
-        imports: new ImportCollection(r.importMeta.type, r.importMeta.validator),
+        responseEntry: r,
       });
-      imports.append(r.importMeta.type);
-      if (r.importMeta.validator) {
-        imports.append(r.importMeta.validator);
-      }
       continue;
     }
 
@@ -120,19 +118,41 @@ const buildResponses = (
       code.push(r.code);
       types.push({
         responseCode: statusCode,
-        typeName: r.typeName,
-        validatorName: r.validatorName,
-        imports: r.imports,
+        responseEntry: {
+          typeName: r.typeName,
+          validatorName: r.validatorName,
+          importMeta: {
+            type: {
+              file: {
+                path: toImportPath(outFile),
+                internal: true,
+              },
+              entries: [{ item: r.typeName, typeOnly: true }],
+            },
+            ...(r.validatorName != null && {
+              validator: {
+                file: {
+                  path: toImportPath(outFile),
+                  internal: true,
+                },
+                entries: [{ item: r.validatorName }],
+              },
+            }),
+          },
+          raw: response,
+        },
       });
+      if (r.imports) {
+        imports.append(r.imports);
+      }
     } else {
       types.push({
         responseCode: statusCode,
-        typeName: r.typeName,
-        validatorName: r.validatorName,
-        imports: new ImportCollection(r.importMeta.type, r.importMeta.validator),
+        responseEntry: {
+          ...r,
+          raw: response,
+        },
       });
-    }
-    if (r.type === 'import') {
       imports.append(r.importMeta.type);
     }
   }
@@ -140,7 +160,7 @@ const buildResponses = (
 };
 
 const buildResponseTypes = (
-  outFile: PathInfo,
+  outFile: FileInfo,
   responseTypeName: string,
   responsesRaw: Responses,
   parameterType: { typename: string; imports: ImportSource } | null,
@@ -153,7 +173,7 @@ const buildResponseTypes = (
   if (parameterType !== null) {
     imports.append(parameterType.imports);
   }
-  const responses = buildResponses(responsesRaw);
+  const responses = buildResponses(outFile, responsesRaw);
   lines.push(...responses.code);
   imports.append(responses.imports);
 
@@ -167,15 +187,15 @@ const buildResponseTypes = (
 
   lines.push(
     template.lines(
-      ...responses.types.map(({ responseCode, typeName, validatorName }) =>
+      ...responses.types.map(({ responseCode, responseEntry }) =>
         template.concat(
           '| {',
           ' response: Response;',
           ' request: Request;',
           // "default" is a special openapi case that is not a number
           ` status: ${responseCode === 'default' ? "'default'" : responseCode};`,
-          typeName && ` data: ${typeName};`,
-          validatorName && `validator: typeof ${validatorName};`,
+          responseEntry?.typeName && ` data: ${responseEntry?.typeName};`,
+          responseEntry?.validatorName && `validator: typeof ${responseEntry?.validatorName};`,
           ' }',
         ),
       ),
