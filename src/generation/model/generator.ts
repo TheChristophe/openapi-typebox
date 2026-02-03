@@ -269,9 +269,9 @@ const generator = (emitter: CodeEmitter) => {
       };
     }
 
-    /*if (isRef(schema)) {
+    if (isRef(schema)) {
       return resolveObjectReference(schema);
-    } else */ if (isObjectSchema(schema)) {
+    } else if (isObjectSchema(schema)) {
       return parseObject(schema);
     } else if (isEnumSchema(schema)) {
       return parseEnum(schema);
