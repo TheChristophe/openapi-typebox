@@ -271,8 +271,6 @@ const generator = (emitter: CodeEmitter) => {
 
     if (isRef(schema)) {
       return resolveObjectReference(schema);
-    } else if (isObjectSchema(schema)) {
-      return parseObject(schema);
     } else if (isEnumSchema(schema)) {
       return parseEnum(schema);
     } else if (isAnyOfSchema(schema)) {
@@ -281,6 +279,8 @@ const generator = (emitter: CodeEmitter) => {
       return parseAllOf(schema);
     } else if (isOneOfSchema(schema)) {
       return parseOneOf(schema);
+    } else if (isObjectSchema(schema)) {
+      return parseObject(schema);
     } else if (isNotSchema(schema)) {
       return parseNot(schema);
     } else if (isArraySchema(schema)) {
