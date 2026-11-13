@@ -21,6 +21,29 @@ import template from './utility/templater.js';
 
 const logger = rootLogger.child({ context: 'function' });
 
+/**
+ * Separators for non-exploded array query parameters, by style.
+ * https://swagger.io/specification/#style-values
+ */
+const queryDelimiters: Record<string, string> = {
+  form: ',',
+  spaceDelimited: ' ',
+  pipeDelimited: '|',
+};
+
+const buildQueryAppend = (param: Parameter): string => {
+  const variable = sanitizeVariableName(param.name);
+  // Query parameters default to style "form", and explode defaults to true only for "form".
+  // Exploded arrays send one key-value pair per item; otherwise items are joined by the style's delimiter.
+  const style = param.style ?? 'form';
+  const explode = param.explode ?? style === 'form';
+  if (explode) {
+    return `if (${variable} != null) for (const value of [${variable}].flat()) query.append("${param.name}", value.toString());`;
+  }
+  const delimiter = queryDelimiters[style] ?? ',';
+  return `if (${variable} != null) query.append("${param.name}", [${variable}].flat().join(${JSON.stringify(delimiter)}));`;
+};
+
 export class InvalidParamError extends Error {}
 
 function forbidReferencesInParameters(
@@ -197,6 +220,9 @@ const operationToFunction = (
 
         buildUrl(route, parameters),
 
+        queryParams.length > 0 &&
+          template.lines('const query = new URLSearchParams();', queryParams.map(buildQueryAppend)),
+
         'const localFetch = config?.fetch ?? fetch;',
         'const headers = new Headers(config?.defaultParams?.headers);',
         '',
@@ -236,15 +262,8 @@ const operationToFunction = (
           // eslint-disable-next-line no-template-curly-in-string
           queryParams.length > 0 ? '`${url}' : 'url',
 
-          queryParams.length > 0 && [
-            '?${new URLSearchParams({',
-
-            queryParams.map(
-              (param) =>
-                `...(${sanitizeVariableName(param.name)} != null && {["${param.name}"]: ${sanitizeVariableName(param.name)}.toString()}),`,
-            ),
-            '}).toString()}',
-          ],
+          // eslint-disable-next-line no-template-curly-in-string
+          queryParams.length > 0 && '?${query.toString()}',
 
           queryParams.length > 0 && '`',
           ',',
